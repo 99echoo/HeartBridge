@@ -1,0 +1,251 @@
+/*
+ * HeartBridge Ask - 커스텀 스타일
+ * 테마: 따뜻하고 친근한 디자인
+ */
+
+/* === 전역 스타일 === */
+:root {
+    --primary-color: #F4A460;
+    --secondary-color: #F5E6D3;
+    --accent-color: #FF8C42;
+    --background-color: #FFFAF0;
+    --text-color: #3E2723;
+    --border-radius: 16px;
+    --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* 전체 배경 */
+.stApp {
+    background-color: var(--background-color);
+}
+
+/* === 카드 스타일 === */
+.card {
+    background-color: white;
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    box-shadow: var(--shadow);
+    margin: 1rem 0;
+    transition: transform 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* === 버튼 스타일 === */
+.stButton > button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 24px;
+    padding: 0.75rem 2rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    box-shadow: var(--shadow);
+    transition: all 0.3s ease;
+}
+
+.stButton > button:hover {
+    background-color: var(--accent-color);
+    transform: scale(1.05);
+    box-shadow: 0 6px 12px rgba(244, 164, 96, 0.3);
+}
+
+.stButton > button:active {
+    transform: scale(0.98);
+}
+
+/* === 진행 바 스타일 === */
+.progress-container {
+    background-color: var(--secondary-color);
+    border-radius: 12px;
+    height: 12px;
+    overflow: hidden;
+    margin: 1rem 0;
+}
+
+.progress-bar {
+    background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+    height: 100%;
+    border-radius: 12px;
+    transition: width 0.5s ease;
+}
+
+/* === 입력 필드 스타일 === */
+.stTextInput > div > div > input,
+.stTextArea > div > div > textarea {
+    border-radius: 12px;
+    border: 2px solid var(--secondary-color);
+    padding: 0.75rem;
+    transition: border-color 0.3s ease;
+}
+
+.stTextInput > div > div > input:focus,
+.stTextArea > div > div > textarea:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(244, 164, 96, 0.1);
+}
+
+/* === 선택 버튼 (라디오/체크박스) === */
+.stRadio > label,
+.stCheckbox > label {
+    background-color: white;
+    border: 2px solid var(--secondary-color);
+    border-radius: 12px;
+    padding: 1rem;
+    margin: 0.5rem 0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: block;
+}
+
+.stRadio > label:hover,
+.stCheckbox > label:hover {
+    border-color: var(--primary-color);
+    background-color: rgba(244, 164, 96, 0.05);
+}
+
+/* === 마리 이미지 스타일 === */
+.mari-mascot {
+    max-width: 200px;
+    height: auto;
+    margin: 1rem auto;
+    display: block;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+}
+
+.mari-small {
+    max-width: 100px;
+}
+
+.mari-large {
+    max-width: 300px;
+}
+
+/* === 헤더 스타일 === */
+h1, h2, h3 {
+    color: var(--text-color);
+    font-weight: 700;
+}
+
+h1 {
+    font-size: 2.5rem;
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+h2 {
+    font-size: 1.8rem;
+    margin-top: 1.5rem;
+}
+
+/* === 결과 페이지 스타일 === */
+.result-section {
+    background: linear-gradient(135deg, #FFF9F0 0%, #FFE8CC 100%);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    margin: 1rem 0;
+    border-left: 4px solid var(--primary-color);
+}
+
+.result-title {
+    color: var(--primary-color);
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.action-item {
+    background-color: white;
+    border-radius: 12px;
+    padding: 1rem;
+    margin: 0.5rem 0;
+    border-left: 3px solid var(--accent-color);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* === 이미지 업로드 영역 === */
+.uploadedFile {
+    border-radius: var(--border-radius);
+    border: 2px dashed var(--primary-color);
+    background-color: rgba(244, 164, 96, 0.05);
+}
+
+/* === 로딩 스피너 === */
+.stSpinner > div {
+    border-top-color: var(--primary-color) !important;
+}
+
+/* === 사이드바 스타일 === */
+.css-1d391kg {
+    background-color: var(--secondary-color);
+}
+
+/* === 메시지 박스 === */
+.stSuccess {
+    background-color: rgba(144, 238, 144, 0.2);
+    border-left: 4px solid #90EE90;
+    border-radius: 8px;
+}
+
+.stWarning {
+    background-color: rgba(255, 193, 7, 0.2);
+    border-left: 4px solid #FFC107;
+    border-radius: 8px;
+}
+
+.stError {
+    background-color: rgba(255, 99, 71, 0.2);
+    border-left: 4px solid #FF6347;
+    border-radius: 8px;
+}
+
+/* === 애니메이션 === */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.bounce {
+    animation: bounce 2s infinite;
+}
+
+/* === 반응형 디자인 === */
+@media (max-width: 768px) {
+    h1 {
+        font-size: 2rem;
+    }
+
+    .card {
+        padding: 1.5rem;
+    }
+
+    .mari-mascot {
+        max-width: 150px;
+    }
+
+    .stButton > button {
+        width: 100%;
+    }
+}

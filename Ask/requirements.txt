@@ -1,0 +1,39 @@
+# HeartBridge - AI 기반 반려견 행동 분석 솔루션
+# Python 3.11+
+
+# Core Framework
+streamlit>=1.40.0
+
+# AI/ML
+anthropic==0.18.1           # Claude Sonnet 4.5 API
+pillow>=10.3.0              # 이미지 처리 및 인스타그램 카드 생성
+
+# Database & Storage
+supabase==2.3.4             # Supabase 클라이언트
+gspread==6.0.0              # Google Sheets API
+oauth2client==4.1.3         # Google API 인증
+
+# Data Validation & Models
+pydantic>=2.10.0            # 데이터 모델 검증
+pydantic-settings>=2.7.0    # 환경 변수 관리
+email-validator>=2.1.0      # 이메일 검증
+
+# Utilities
+python-dotenv==1.0.0        # 환경 변수 로드
+python-magic-bin==0.4.14    # 파일 타입 검증 (Windows)
+
+# Email Service
+sendgrid==6.11.0            # 이메일 전송 (무료 플랜: 100통/일)
+
+# Testing
+pytest==8.0.0
+pytest-asyncio==0.23.3
+pytest-cov==4.1.0
+
+# Logging & Monitoring
+loguru==0.7.2               # 향상된 로깅
+
+# Future Extensions (현재 미사용, 주석 처리)
+# langchain==0.1.0          # RAG 구현 시 필요
+# chromadb==0.4.22          # 벡터 DB (RAG)
+# opencv-python==4.9.0      # 동영상 처리 시 필요

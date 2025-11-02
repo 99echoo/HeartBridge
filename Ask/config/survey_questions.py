@@ -87,12 +87,11 @@ PERSONALITY_QUESTIONS: List[Dict] = [
     {
         "id": "activity_time",
         "question": "반려견이 활발히 활동하는 시간은 얼마나 되나요?",
-        "type": "radio",
+        "type": "radio_horizontal",
         "options": [
             {"value": "under_30min", "label": "30분 이내"},
             {"value": "30min_to_1h", "label": "30분에서 1시간"},
             {"value": "over_1h", "label": "1시간 이상"},
-            {"value": "over_3h", "label": "3시간 이상"},
         ],
         "required": True,
     },
@@ -119,7 +118,7 @@ BEHAVIOR_PROBLEM_QUESTIONS: List[Dict] = [
     {
         "id": "problem_start_time",
         "question": "해당 문제 행동이 시작된 시점은 언제인가요?",
-        "type": "radio",
+        "type": "radio_horizontal",
         "options": [
             {"value": "within_1month", "label": "최근 1개월 이내"},
             {"value": "over_3months", "label": "3개월 이상"},
@@ -157,7 +156,7 @@ ENVIRONMENT_QUESTIONS: List[Dict] = [
     {
         "id": "living_environment",
         "question": "반려견이 생활하는 환경은 어떤가요?",
-        "type": "radio",
+        "type": "radio_horizontal",
         "options": [
             {"value": "apartment", "label": "아파트"},
             {"value": "officetel_villa", "label": "오피스텔/빌라/원룸"},
@@ -169,7 +168,7 @@ ENVIRONMENT_QUESTIONS: List[Dict] = [
     {
         "id": "family_members",
         "question": "반려견과 함께 사는 가족의 구성원 인원을 알려주세요",
-        "type": "radio",
+        "type": "radio_horizontal",
         "options": [
             {"value": "1", "label": "1인"},
             {"value": "2-3", "label": "2~3인"},
@@ -178,17 +177,26 @@ ENVIRONMENT_QUESTIONS: List[Dict] = [
         "required": True,
     },
     {
-        "id": "outing_time",
+        "id": "has_fixed_outing",
         "question": "고정적인 외출 시간이 있으시면(출근 등), 알려주세요",
-        "type": "radio",
+        "type": "radio_horizontal",
         "options": [
-            {"value": "none", "label": "고정적인 외출 시간 없음"},
-            {"value": "morning", "label": "오전 (6시~12시)"},
-            {"value": "afternoon", "label": "오후 (12시~18시)"},
-            {"value": "evening", "label": "저녁 (18시~24시)"},
-            {"value": "full_day", "label": "종일 (8시간 이상)"},
+            {"value": "no", "label": "없음"},
+            {"value": "yes", "label": "있음"},
         ],
+        "required": True,
+    },
+    {
+        "id": "outing_time_range",
+        "question": "외출 시간대를 선택해주세요",
+        "type": "time_range",
+        "description": "외출 시작 시간과 종료 시간을 선택해주세요",
+        "min": 0,
+        "max": 24,
         "required": False,
+        "conditional": True,  # 조건부 표시
+        "depends_on": "has_fixed_outing",  # 이 질문에 의존
+        "show_when": "yes",  # 이 값일 때만 표시
     },
 ]
 
@@ -348,7 +356,8 @@ EXAMPLE_RESPONSES = {
     # 환경
     "living_environment": "apartment",
     "family_members": "2-3",
-    "outing_time": [9, 18],
+    "has_fixed_outing": "yes",
+    "outing_time_range": [9, 18],
     # 사진
     "dog_photo": None,
     "behavior_media": None,

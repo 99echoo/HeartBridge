@@ -17,6 +17,7 @@ class Settings(BaseSettings):
 
     # AI API
     ANTHROPIC_API_KEY: str
+    OPENAI_API_KEY: str
 
     # Supabase
     SUPABASE_URL: str

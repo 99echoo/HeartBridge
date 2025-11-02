@@ -20,7 +20,17 @@
       "Bash(python -c \"open(''src/ai/prompt_builder.py'', ''w'').write('''')\")",
       "Bash(python -c \"open(''src/ai/mari_persona.py'', ''w'').write('''')\")",
       "Bash(python -c \"open(''src/ai/analyzer.py'', ''w'').write('''')\")",
-      "Bash(venvScriptsstreamlit run app.py)"
+      "Bash(venvScriptsstreamlit run app.py)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(../venv/Scripts/python.exe -m streamlit run app.py)",
+      "Bash(python:*)",
+      "Bash(nul)",
+      "WebSearch",
+      "Bash(netstat:*)",
+      "Bash(pip show:*)",
+      "Bash(ipconfig:*)",
+      "Bash(del nul)"
     ],
     "deny": [],
     "ask": []

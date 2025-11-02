@@ -7,6 +7,7 @@
 
 import streamlit as st
 import time
+import asyncio
 from pathlib import Path
 
 # 설정 파일 임포트
@@ -19,6 +20,7 @@ from config.survey_questions import (
     get_photo_questions,
 )
 from src.utils.mock_data import get_mock_result_by_problem
+from src.ai.analyzer import analyze_two_stage
 
 # 페이지 설정
 st.set_page_config(
@@ -49,17 +51,30 @@ st.markdown("""
         background-color: #ffffff !important;
     }
 
+    /* 상단 패딩 축소 (모바일 최적화) */
+    .block-container {
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
+    }
+
+    @media (max-width: 768px) {
+        .block-container {
+            padding-top: 1rem !important;
+            padding-bottom: 1rem !important;
+        }
+    }
+
     /* 텍스트 색상 강제 */
     .stMarkdown, p, span, div {
         color: #333333 !important;
     }
 
-    /* 텍스트 입력 필드 테두리 스타일 */
+    /* 텍스트 입력 필드 테두리 스타일 - 반응형 */
     .stTextInput > div > div > input {
         border: 2px solid #e0e0e0 !important;
-        border-radius: 8px !important;
-        padding: 12px !important;
-        font-size: 16px !important;
+        border-radius: clamp(6px, 2vw, 8px) !important;
+        padding: clamp(10px, 2.5vw, 12px) !important;
+        font-size: clamp(14px, 3.5vw, 16px) !important;
         background-color: #ffffff !important;
         color: #333333 !important;
     }
@@ -76,42 +91,58 @@ st.markdown("""
         font-style: italic !important;
     }
 
-    /* 랜딩 페이지 스타일 */
+    /* 랜딩 페이지 스타일 - 반응형 */
     .landing-title {
-        font-size: 56px !important;
+        font-size: clamp(32px, 8vw, 56px) !important;
         font-weight: bold !important;
         color: #E8826B !important;
         text-align: center !important;
-        margin-top: 20px !important;
-        margin-bottom: 25px !important;
+        margin-top: clamp(5px, 2vw, 20px) !important;
+        margin-bottom: clamp(10px, 3vw, 25px) !important;
     }
 
     .landing-subtitle {
-        font-size: 18px !important;
+        font-size: clamp(14px, 4vw, 18px) !important;
         font-weight: bold !important;
         color: #333333 !important;
         text-align: center !important;
-        line-height: 1.8 !important;
-        margin-bottom: 10px !important;
+        line-height: 1.6 !important;
+        margin-bottom: clamp(5px, 1.5vw, 10px) !important;
     }
 
     .landing-description {
-        font-size: 16px !important;
+        font-size: clamp(13px, 3.5vw, 16px) !important;
         font-weight: bold !important;
         color: #666666 !important;
         text-align: center !important;
-        line-height: 1.8 !important;
-        margin-bottom: 15px !important;
+        line-height: 1.6 !important;
+        margin-bottom: clamp(8px, 2vw, 15px) !important;
     }
 
-    /* 버튼 스타일 - 산호색 (질문 답변용) */
+    /* 랜딩 페이지 모바일 최적화 */
+    @media (max-width: 768px) {
+        .landing-title {
+            margin-top: 0 !important;
+            margin-bottom: 8px !important;
+        }
+        .landing-subtitle {
+            line-height: 1.5 !important;
+            margin-bottom: 5px !important;
+        }
+        .landing-description {
+            line-height: 1.5 !important;
+            margin-bottom: 8px !important;
+        }
+    }
+
+    /* 버튼 스타일 - 산호색 (질문 답변용) - 반응형 */
     .stButton > button {
         background-color: #E8826B !important;
         color: #333333 !important;
         border: none !important;
-        border-radius: 25px !important;
-        padding: 15px 30px !important;
-        font-size: 18px !important;
+        border-radius: clamp(15px, 4vw, 25px) !important;
+        padding: clamp(12px, 3vw, 15px) clamp(20px, 5vw, 30px) !important;
+        font-size: clamp(14px, 4vw, 18px) !important;
         font-weight: bold !important;
         transition: all 0.3s ease !important;
     }
@@ -127,6 +158,16 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(232, 130, 107, 0.3) !important;
     }
 
+    /* Primary 버튼 (선택된 질문 답변) - 흰색 텍스트 */
+    .stButton > button[kind="primary"] {
+        color: #ffffff !important;
+    }
+
+    .stButton > button[kind="primary"] p {
+        color: #ffffff !important;
+    }
+
+    /* Secondary 버튼 (선택 안 된 질문 답변) - 검정색 텍스트 */
     .stButton > button[kind="secondary"] {
         background-color: #f5f5f5 !important;
         color: #333333 !important;
@@ -144,43 +185,40 @@ st.markdown("""
         color: #333333 !important;
     }
 
-    /* 네비게이션 버튼 스타일 - 더 높은 우선순위로 재정의 */
-    div[data-testid="column"] .nav-button-container button[data-testid="baseButton-primary"],
-    div[data-testid="column"] .nav-button-container button[data-testid="baseButton-secondary"],
-    .nav-button-container button[data-testid="baseButton-primary"],
-    .nav-button-container button[data-testid="baseButton-secondary"] {
+    /* 네비게이션 버튼 스타일 - Key 기반 (수정됨) */
+    .st-key-nav_start button,
+    .st-key-nav_prev button,
+    .st-key-nav_next button,
+    .st-key-nav_restart button {
         background-color: #E8826B !important;
         color: #ffffff !important;
         border: none !important;
-        border-radius: 8px !important;
-        padding: 12px 24px !important;
-        font-size: 16px !important;
+        border-radius: clamp(6px, 2vw, 8px) !important;
+        padding: clamp(10px, 2.5vw, 12px) clamp(16px, 4vw, 24px) !important;
+        font-size: clamp(14px, 3.5vw, 16px) !important;
         font-weight: bold !important;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
         transition: all 0.3s ease !important;
     }
 
-    div[data-testid="column"] .nav-button-container button[data-testid="baseButton-primary"]:hover,
-    div[data-testid="column"] .nav-button-container button[data-testid="baseButton-secondary"]:hover,
-    .nav-button-container button[data-testid="baseButton-primary"]:hover,
-    .nav-button-container button[data-testid="baseButton-secondary"]:hover {
+    .st-key-nav_start button:hover,
+    .st-key-nav_prev button:hover,
+    .st-key-nav_next button:hover,
+    .st-key-nav_restart button:hover {
         background-color: #D67159 !important;
         box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15) !important;
         transform: translateY(-2px) !important;
     }
 
-    div[data-testid="column"] .nav-button-container button p,
-    .nav-button-container button p {
+    .st-key-nav_start button p,
+    .st-key-nav_prev button p,
+    .st-key-nav_next button p,
+    .st-key-nav_restart button p {
         color: #ffffff !important;
         font-weight: bold !important;
     }
 
-    /* 랜딩 페이지의 네비게이션 버튼도 흰색 텍스트 유지 */
-    .landing-page .nav-button-container button p {
-        color: #ffffff !important;
-    }
-
-    /* 이미지 중앙 정렬 */
+    /* 이미지 중앙 정렬 및 반응형 크기 */
     .stImage {
         display: flex !important;
         justify-content: center !important;
@@ -191,6 +229,52 @@ st.markdown("""
         display: block !important;
         margin-left: auto !important;
         margin-right: auto !important;
+        max-width: 100% !important;
+        height: auto !important;
+    }
+
+    /* 모바일에서 이미지 크기 제한 - 더 작게 */
+    @media (max-width: 768px) {
+        .stImage > img {
+            max-width: 40% !important;
+            width: 40% !important;
+        }
+
+        /* 컬럼 안의 이미지도 강제 */
+        div[data-testid="column"] .stImage > img {
+            max-width: 40% !important;
+            width: 40% !important;
+        }
+    }
+
+    /* 태블릿에서 이미지 크기 제한 */
+    @media (min-width: 769px) and (max-width: 1024px) {
+        .stImage > img {
+            max-width: 60% !important;
+        }
+    }
+
+    /* 섹션 제목 반응형 */
+    h1, .stMarkdown h1 {
+        font-size: clamp(24px, 6vw, 32px) !important;
+    }
+
+    h2, .stMarkdown h2 {
+        font-size: clamp(20px, 5vw, 28px) !important;
+    }
+
+    h3, .stMarkdown h3 {
+        font-size: clamp(16px, 4vw, 20px) !important;
+    }
+
+    /* 일반 텍스트 반응형 */
+    p, .stMarkdown p {
+        font-size: clamp(13px, 3.5vw, 16px) !important;
+    }
+
+    /* 캡션 텍스트 반응형 */
+    .stMarkdown small, .stCaption {
+        font-size: clamp(11px, 3vw, 14px) !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -214,12 +298,14 @@ def initialize_session_state():
 def next_page():
     """다음 페이지로 이동"""
     st.session_state.page += 1
+    st.rerun()
 
 
 def prev_page():
     """이전 페이지로 이동"""
     if st.session_state.page > 0:
         st.session_state.page -= 1
+        st.rerun()
 
 
 def show_progress_bar(step, total=7):
@@ -553,9 +639,6 @@ def page_landing():
 
     st.markdown('<div class="landing-page">', unsafe_allow_html=True)
 
-    # 여백
-    st.markdown("<br>", unsafe_allow_html=True)
-
     # 큰 제목: 마음다리
     st.markdown('<div class="landing-title">마음다리</div>', unsafe_allow_html=True)
 
@@ -568,8 +651,6 @@ def page_landing():
         '</div>',
         unsafe_allow_html=True
     )
-
-    st.markdown("<br>", unsafe_allow_html=True)
 
     # 두 번째 설명
     st.markdown(
@@ -598,7 +679,7 @@ def page_landing():
     st.markdown('<div class="nav-button-container">', unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        if st.button("마리에게 물어보기", use_container_width=True, type="primary"):
+        if st.button("마리에게 물어보기", key="nav_start", use_container_width=True, type="primary"):
             next_page()
     st.markdown('</div>', unsafe_allow_html=True)  # nav-button-container 닫기
 
@@ -639,7 +720,7 @@ def page_basic_info():
     st.markdown('<div class="nav-button-container">', unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("이전", use_container_width=True):
+        if st.button("이전", key="nav_prev", use_container_width=True):
             prev_page()
     with col2:
         # 필수 필드 검증
@@ -649,7 +730,7 @@ def page_basic_info():
         )
 
         if all_filled:
-            if st.button("다음", use_container_width=True, type="primary"):
+            if st.button("다음", key="nav_next", use_container_width=True, type="primary"):
                 next_page()
         else:
             st.button("모든 필수 항목을 입력해주세요", use_container_width=True, disabled=True)
@@ -690,7 +771,7 @@ def page_personality():
     st.markdown('<div class="nav-button-container">', unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("이전", use_container_width=True):
+        if st.button("이전", key="nav_prev", use_container_width=True):
             prev_page()
     with col2:
         # 필수 필드 검증
@@ -700,7 +781,7 @@ def page_personality():
         )
 
         if all_filled:
-            if st.button("다음", use_container_width=True, type="primary"):
+            if st.button("다음", key="nav_next", use_container_width=True, type="primary"):
                 next_page()
         else:
             st.button("모든 필수 항목을 입력해주세요", use_container_width=True, disabled=True)
@@ -741,7 +822,7 @@ def page_behavior_problem():
     st.markdown('<div class="nav-button-container">', unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("이전", use_container_width=True):
+        if st.button("이전", key="nav_prev", use_container_width=True):
             prev_page()
     with col2:
         # 필수 필드 검증
@@ -751,7 +832,7 @@ def page_behavior_problem():
         )
 
         if all_filled:
-            if st.button("다음", use_container_width=True, type="primary"):
+            if st.button("다음", key="nav_next", use_container_width=True, type="primary"):
                 next_page()
         else:
             st.button("모든 필수 항목을 입력해주세요", use_container_width=True, disabled=True)
@@ -778,8 +859,20 @@ def page_environment():
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("---")
 
-    # 각 질문 렌더링
+    # 각 질문 렌더링 (조건부 처리)
     for q in questions:
+        # 조건부 질문 처리
+        if q.get("conditional", False):
+            depends_on = q.get("depends_on")
+            show_when = q.get("show_when")
+
+            # 의존하는 질문의 응답 확인
+            parent_response = st.session_state.responses.get(depends_on)
+
+            # 조건이 맞을 때만 표시
+            if parent_response != show_when:
+                continue
+
         response = render_question(q)
 
         if q["type"] not in ["image", "media"]:
@@ -792,17 +885,31 @@ def page_environment():
     st.markdown('<div class="nav-button-container">', unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("이전", use_container_width=True):
+        if st.button("이전", key="nav_prev", use_container_width=True):
             prev_page()
     with col2:
-        # 필수 필드 검증 (선택 항목 제외)
-        required_fields = [q["id"] for q in questions if q.get("required", False)]
+        # 필수 필드 검증 (조건부 필드 고려)
+        required_fields = []
+        for q in questions:
+            if q.get("required", False):
+                # 조건부 질문인 경우 조건 확인
+                if q.get("conditional", False):
+                    depends_on = q.get("depends_on")
+                    show_when = q.get("show_when")
+                    parent_response = st.session_state.responses.get(depends_on)
+
+                    # 조건이 맞을 때만 필수
+                    if parent_response == show_when:
+                        required_fields.append(q["id"])
+                else:
+                    required_fields.append(q["id"])
+
         all_filled = all(
             st.session_state.responses.get(field) for field in required_fields
         )
 
         if all_filled:
-            if st.button("다음", use_container_width=True, type="primary"):
+            if st.button("다음", key="nav_next", use_container_width=True, type="primary"):
                 next_page()
         else:
             st.button("모든 필수 항목을 입력해주세요", use_container_width=True, disabled=True)
@@ -847,12 +954,12 @@ def page_photos():
     st.markdown('<div class="nav-button-container">', unsafe_allow_html=True)
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("이전", use_container_width=True):
+        if st.button("이전", key="nav_prev", use_container_width=True):
             prev_page()
     with col2:
         # dog_photo는 필수
         if st.session_state.dog_photo is not None:
-            if st.button("분석 시작 🚀", use_container_width=True, type="primary"):
+            if st.button("분석 시작 🚀", key="nav_next", use_container_width=True, type="primary"):
                 next_page()
         else:
             st.button("반려견 사진을 업로드해주세요", use_container_width=True, disabled=True)
@@ -861,6 +968,87 @@ def page_photos():
 
 # ===== 페이지 6: AI 분석 중 =====
 def page_analyzing():
+    # 마리 이미지 애니메이션 CSS
+    st.markdown("""
+        <style>
+        /* 마리 이미지 펄스 애니메이션 */
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        /* 마리 이미지 흔들림 애니메이션 */
+        @keyframes shake {
+            0%, 100% {
+                transform: rotate(0deg);
+            }
+            25% {
+                transform: rotate(-5deg);
+            }
+            75% {
+                transform: rotate(5deg);
+            }
+        }
+
+        /* 분석 중 페이지의 이미지에만 애니메이션 적용 */
+        .analyzing-page .stImage > img {
+            animation: pulse 2s ease-in-out infinite, shake 3s ease-in-out infinite;
+        }
+
+        /* 동적 메시지 페이드인 애니메이션 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 깜빡거리는 애니메이션 */
+        @keyframes blink {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        .dynamic-message {
+            animation: fadeIn 0.5s ease-in-out;
+            font-size: clamp(16px, 4vw, 20px) !important;
+            font-weight: bold !important;
+            color: #E8826B !important;
+            text-align: center !important;
+            margin: 20px 0 !important;
+        }
+
+        .dynamic-message.blinking {
+            animation: fadeIn 0.5s ease-in-out, blink 1s ease-in-out infinite;
+        }
+
+        /* 완료 메시지 스타일 */
+        .completion-message {
+            animation: fadeIn 0.8s ease-in-out;
+            font-size: clamp(18px, 5vw, 24px) !important;
+            font-weight: bold !important;
+            color: #4CAF50 !important;
+            text-align: center !important;
+            margin: 20px 0 !important;
+            text-shadow: 0 2px 4px rgba(76, 175, 80, 0.3) !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown('<div class="analyzing-page">', unsafe_allow_html=True)
+
     st.title("🤖 AI 분석 중...")
     show_progress_bar(6, 7)
 
@@ -873,45 +1061,171 @@ def page_analyzing():
 
     dog_name = st.session_state.responses.get("dog_name", "강아지")
 
-    st.markdown("### 잠시만 기다려주세요!")
-    st.info(
-        f"""
-    🔍 {dog_name}의 행동을 분석하고 있어요...
+    # 동적 메시지 리스트
+    dynamic_messages = [
+        f"🐶 {dog_name}의 행동을 꼼꼼히 분석하고 있어요!",
+        "🔍 마리가 열심히 생각 중이에요...",
+        "💭 전문가 의견을 모으고 있어요!",
+        "✨ 맞춤 솔루션을 준비하고 있어요!",
+        "⏳ 조금만 기다려주세요, 거의 다 됐어요!",
+    ]
 
-    - 설문 응답 분석 중
-    - 이미지 분석 중
-    - 전문가 의견 취합 중
-    - 맞춤 솔루션 생성 중
-    """
-    )
+    # 동적 메시지 표시 영역
+    message_placeholder = st.empty()
+
+    st.markdown("### 분석 진행 중...")
 
     # 로딩 바
     progress_bar = st.progress(0)
     status_text = st.empty()
 
-    # Mock 분석 수행
+    # 실제 AI 분석 수행
     if st.session_state.analysis_result is None:
-        for i in range(100):
-            progress_bar.progress(i + 1)
-            if i < 25:
-                status_text.text("설문 응답 분석 중...")
-            elif i < 50:
-                status_text.text("이미지 분석 중...")
-            elif i < 75:
-                status_text.text("전문가 의견 취합 중...")
+        try:
+            import random
+
+            # 필수 데이터 확인
+            dog_photo = st.session_state.get("dog_photo")
+            behavior_media = st.session_state.get("behavior_media")
+
+            if dog_photo is None:
+                st.error("강아지 사진이 업로드되지 않았습니다.")
+                st.markdown('</div>', unsafe_allow_html=True)
+                return
+
+            # 이미지를 bytes로 변환 (UploadedFile 객체인 경우)
+            if hasattr(dog_photo, 'read'):
+                dog_photo_bytes = dog_photo.read()
             else:
-                status_text.text("맞춤 솔루션 생성 중...")
-            time.sleep(0.03)
+                dog_photo_bytes = dog_photo
 
-        # Mock 데이터 가져오기
-        main_concerns = st.session_state.responses.get("main_concerns", [])
-        problem_type = main_concerns[0] if main_concerns else "barking"
-        st.session_state.analysis_result = get_mock_result_by_problem(problem_type)
+            behavior_media_bytes = None
+            if behavior_media:
+                if hasattr(behavior_media, 'read'):
+                    behavior_media_bytes = behavior_media.read()
+                else:
+                    behavior_media_bytes = behavior_media
 
-        status_text.text("✅ 분석 완료!")
-        time.sleep(1)
-        next_page()
-        st.rerun()
+            # 분석 단계 정의 (동적 프로그레스) - 90%까지만
+            analysis_steps = [
+                (8, "📋 설문 응답 데이터 처리 중...", 0),
+                (12, "📊 응답 패턴 분석 중...", 0),
+                (18, "🖼️ 이미지 로딩 중...", 1),
+                (25, "🔍 이미지 특징 추출 중...", 1),
+                (35, "🤖 1차 AI 전문가 분석 시작...", 2),
+                (50, "💭 행동 패턴 분석 중...", 2),
+                (65, "🎯 문제 원인 파악 중...", 3),
+                (75, "✨ 2차 AI 마리 변환 중...", 3),
+                (85, "📝 맞춤 솔루션 생성 중...", 4),
+                (90, "✅ 최종 검토 중...", 4),
+            ]
+
+            # 단계별 업데이트 (깜빡거리는 효과)
+            for progress, status, msg_idx in analysis_steps:
+                progress_bar.progress(progress)
+                status_text.text(status)
+
+                # 동적 메시지 업데이트 (깜빡거리는 효과 추가)
+                message_placeholder.markdown(
+                    f'<div class="dynamic-message blinking">{dynamic_messages[msg_idx]}</div>',
+                    unsafe_allow_html=True
+                )
+
+                # 속도를 늦춤 (0.8초 대기)
+                time.sleep(0.8)
+
+            # 2단계 AI 분석 실행 (실제 분석)
+            status_text.text("🚀 AI 분석 진행 중...")
+            message_placeholder.markdown(
+                f'<div class="dynamic-message blinking">💫 마리가 최선을 다하고 있어요!</div>',
+                unsafe_allow_html=True
+            )
+
+            # 실제 AI 분석 실행
+            result = asyncio.run(
+                analyze_two_stage(
+                    responses=st.session_state.responses,
+                    dog_photo=dog_photo_bytes,
+                    behavior_media=behavior_media_bytes
+                )
+            )
+
+            # AI 분석 완료 시그널 받음!
+            st.session_state.analysis_result = result
+
+            # 완료 시그널 받은 후 100% + 완료 메시지
+            progress_bar.progress(100)
+            status_text.text("✅ 분석 완료!")
+            message_placeholder.markdown(
+                f'<div class="completion-message">🎉 결과가 완료됐어요!</div>',
+                unsafe_allow_html=True
+            )
+            time.sleep(2.0)
+
+            st.markdown('</div>', unsafe_allow_html=True)
+            next_page()
+            st.rerun()
+
+        except Exception as e:
+            st.error(f"분석 중 오류가 발생했습니다: {str(e)}")
+            st.error("Mock 데이터를 사용합니다.")
+
+            # Mock 데이터로 폴백 (동적 애니메이션 유지)
+            dog_name = st.session_state.responses.get("dog_name", "강아지")
+
+            # Mock 모드 프로그레스 (깜빡거리는 효과)
+            mock_steps = [
+                (15, 0),
+                (30, 1),
+                (50, 2),
+                (70, 3),
+                (85, 4),
+            ]
+
+            for progress, msg_idx in mock_steps:
+                progress_bar.progress(progress)
+                message_placeholder.markdown(
+                    f'<div class="dynamic-message blinking">{dynamic_messages[msg_idx]}</div>',
+                    unsafe_allow_html=True
+                )
+                time.sleep(0.8)
+
+            # 폴백: Mock 데이터
+            main_concerns = st.session_state.responses.get("main_concerns", [])
+            problem_type = main_concerns[0] if main_concerns else "barking"
+            mock_result = get_mock_result_by_problem(problem_type)
+
+            # Mock 데이터를 새 형식으로 변환
+            st.session_state.analysis_result = {
+                "final_text": f"""**"{dog_name}의 행동 분석 결과예요!"**
+
+{mock_result.get('behavior_summary', '')}
+
+---
+
+{mock_result.get('expert_opinion', '')}
+
+---
+
+## 맞춤 훈련 플랜
+
+""" + "\n\n".join([f"**{i+1}. {step}**" for i, step in enumerate(mock_result.get('action_plan', []))]),
+                "confidence_score": mock_result.get("confidence_score", 0.5),
+                "raw_json": {}
+            }
+
+            # Mock 데이터 완료 시그널
+            progress_bar.progress(100)
+            status_text.text("✅ 분석 완료!")
+            message_placeholder.markdown(
+                f'<div class="completion-message">🎉 결과가 완료됐어요!</div>',
+                unsafe_allow_html=True
+            )
+            time.sleep(2.0)
+
+            st.markdown('</div>', unsafe_allow_html=True)
+            next_page()
+            st.rerun()
 
 
 # ===== 페이지 7: 분석 결과 =====
@@ -931,30 +1245,40 @@ def page_result():
 
         st.markdown("---")
 
-        # 행동 요약
-        st.markdown("## 📝 행동 분석 요약")
-        st.markdown(result.get("behavior_summary", ""))
+        # 강아지 이미지 표시
+        dog_photo = st.session_state.get("dog_photo")
+        if dog_photo:
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                st.image(dog_photo, caption=f"{dog_name}의 사진", use_container_width=True)
+            st.markdown("---")
 
-        st.markdown("---")
+        # 마리의 최종 분석 결과 (Markdown 전체)
+        final_text = result.get("final_text", "")
+        if final_text:
+            st.markdown(final_text)
+        else:
+            # 하위 호환성: 구 형식 지원
+            st.markdown("## 📝 행동 분석 요약")
+            st.markdown(result.get("behavior_summary", ""))
 
-        # 전문가 의견
-        st.markdown("## 👨‍⚕️ 전문가 의견")
-        st.markdown(result.get("expert_opinion", ""))
+            st.markdown("---")
 
-        st.markdown("---")
+            st.markdown("## 👨‍⚕️ 전문가 의견")
+            st.markdown(result.get("expert_opinion", ""))
 
-        # 액션 플랜
-        st.markdown("## 🎯 맞춤 훈련 플랜")
-        action_plan = result.get("action_plan", [])
-        for i, step in enumerate(action_plan, 1):
-            with st.expander(f"단계 {i}", expanded=(i == 1)):
-                st.markdown(step)
+            st.markdown("---")
 
-        st.markdown("---")
+            st.markdown("## 🎯 맞춤 훈련 플랜")
+            action_plan = result.get("action_plan", [])
+            for i, step in enumerate(action_plan, 1):
+                with st.expander(f"단계 {i}", expanded=(i == 1)):
+                    st.markdown(step)
 
-        # 추가 노트
-        if result.get("additional_notes"):
-            st.warning(f"⚠️ {result['additional_notes']}")
+            st.markdown("---")
+
+            if result.get("additional_notes"):
+                st.warning(f"⚠️ {result['additional_notes']}")
 
         st.markdown("---")
 
@@ -970,14 +1294,17 @@ def page_result():
 
         st.markdown("---")
 
-        if st.button("🔄 새로운 분석 시작", use_container_width=True, type="primary"):
-            # 세션 초기화
-            st.session_state.page = 0
-            st.session_state.responses = {}
-            st.session_state.dog_photo = None
-            st.session_state.behavior_media = None
-            st.session_state.analysis_result = None
-            st.rerun()
+        # 새로운 분석 시작 버튼 (네비게이션 스타일)
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button("새로운 분석 시작", key="nav_restart", use_container_width=True, type="primary"):
+                # 세션 초기화
+                st.session_state.page = 0
+                st.session_state.responses = {}
+                st.session_state.dog_photo = None
+                st.session_state.behavior_media = None
+                st.session_state.analysis_result = None
+                st.rerun()
 
 
 # ===== 메인 앱 =====

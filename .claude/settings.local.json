@@ -30,7 +30,10 @@
       "Bash(netstat:*)",
       "Bash(pip show:*)",
       "Bash(ipconfig:*)",
-      "Bash(del nul)"
+      "Bash(del nul)",
+      "Bash(streamlit run:*)",
+      "Bash(Ask/venv/Scripts/python.exe:*)",
+      "Bash(AskvenvScriptspython.exe -m streamlit run Askapp.py)"
     ],
     "deny": [],
     "ask": []

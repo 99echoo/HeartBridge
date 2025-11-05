@@ -6,6 +6,7 @@
 
 from pydantic_settings import BaseSettings
 from typing import Optional
+from pathlib import Path
 
 
 class Settings(BaseSettings):
@@ -42,7 +43,8 @@ class Settings(BaseSettings):
     MAX_SURVEY_QUESTIONS: int = 10
 
     class Config:
-        env_file = ".env"
+        # settings.py 파일 위치 기준으로 상위 디렉토리(Ask/)의 .env 파일 찾기
+        env_file = Path(__file__).parent.parent / ".env"
         env_file_encoding = "utf-8"
         case_sensitive = True
 

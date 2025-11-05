@@ -59,7 +59,7 @@ st.markdown("""
 
     @media (max-width: 768px) {
         .block-container {
-            padding-top: 1rem !important;
+            padding-top: 2rem !important;
             padding-bottom: 1rem !important;
         }
     }
@@ -97,7 +97,7 @@ st.markdown("""
         font-weight: bold !important;
         color: #E8826B !important;
         text-align: center !important;
-        margin-top: clamp(5px, 2vw, 20px) !important;
+        margin-top: clamp(20px, 5vw, 40px) !important;
         margin-bottom: clamp(10px, 3vw, 25px) !important;
     }
 
@@ -116,7 +116,20 @@ st.markdown("""
         color: #666666 !important;
         text-align: center !important;
         line-height: 1.6 !important;
-        margin-bottom: clamp(8px, 2vw, 15px) !important;
+        margin-bottom: clamp(5px, 1vw, 8px) !important;
+    }
+
+    /* 랜딩 페이지 이미지 여백 축소 */
+    .landing-page .stImage {
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+    }
+
+    /* 랜딩 페이지 버튼 컨테이너 여백 축소 */
+    .landing-page .nav-button-container {
+        margin-top: clamp(5px, 1vw, 10px) !important;
     }
 
     /* 랜딩 페이지 모바일 최적화 */
@@ -131,7 +144,7 @@ st.markdown("""
         }
         .landing-description {
             line-height: 1.5 !important;
-            margin-bottom: 8px !important;
+            margin-bottom: 5px !important;
         }
     }
 
@@ -236,14 +249,14 @@ st.markdown("""
     /* 모바일에서 이미지 크기 제한 - 더 작게 */
     @media (max-width: 768px) {
         .stImage > img {
-            max-width: 40% !important;
-            width: 40% !important;
+            max-width: 15% !important;
+            width: 15% !important;
         }
 
         /* 컬럼 안의 이미지도 강제 */
         div[data-testid="column"] .stImage > img {
-            max-width: 40% !important;
-            width: 40% !important;
+            max-width: 15% !important;
+            width: 15% !important;
         }
     }
 
@@ -261,6 +274,7 @@ st.markdown("""
 
     h2, .stMarkdown h2 {
         font-size: clamp(20px, 5vw, 28px) !important;
+        margin-top: clamp(15px, 4vw, 30px) !important;
     }
 
     h3, .stMarkdown h3 {
@@ -276,7 +290,46 @@ st.markdown("""
     .stMarkdown small, .stCaption {
         font-size: clamp(11px, 3vw, 14px) !important;
     }
+
+    /* 구분선(hr) 마진 축소 - 질문 사이 간격 줄이기 */
+    hr {
+        margin: 8px 0 !important;
+        border: none !important;
+        border-bottom: 1px solid #e0e0e0 !important;
+    }
+
+    /* 파일 업로더 스타일 개선 */
+    [data-testid="stFileUploader"] {
+        background-color: #FFEAE6 !important;
+        border: 2px dashed #E8826B !important;
+        border-radius: 12px !important;
+        padding: 20px !important;
+    }
+
+    [data-testid="stFileUploader"] label {
+        color: #E8826B !important;
+        font-weight: bold !important;
+    }
+
+    /* 파일 업로더 버튼 */
+    [data-testid="stFileUploader"] button {
+        background-color: #E8826B !important;
+        color: #ffffff !important;
+        border-radius: 8px !important;
+    }
+
+    [data-testid="stFileUploader"] button:hover {
+        background-color: #D67159 !important;
+    }
     </style>
+""", unsafe_allow_html=True)
+
+# 페이지 전환 시 스크롤 맨 위로 이동
+st.markdown("""
+    <script>
+    // 페이지 로드 시 스크롤을 맨 위로
+    window.parent.document.querySelector('section.main').scrollTo(0, 0);
+    </script>
 """, unsafe_allow_html=True)
 
 
@@ -691,7 +744,6 @@ def page_basic_info():
     questions = get_basic_info_questions()
 
     st.markdown("## 우리 강아지에 대해 알려주세요")
-    st.markdown("<br>", unsafe_allow_html=True)
 
     show_progress_bar(1, 7)
 
@@ -702,7 +754,6 @@ def page_basic_info():
         with col2:
             st.image(mari_image, use_container_width=True)
 
-    st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("---")
 
     # 각 질문 렌더링
@@ -743,7 +794,6 @@ def page_personality():
     dog_name = st.session_state.responses.get("dog_name", "강아지")
 
     st.markdown(f"## {dog_name}의 평소 성향을 알려주세요")
-    st.markdown("<br>", unsafe_allow_html=True)
 
     show_progress_bar(2, 7)
 
@@ -754,7 +804,6 @@ def page_personality():
         with col2:
             st.image(mari_image, use_container_width=True)
 
-    st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("---")
 
     # 각 질문 렌더링
@@ -794,7 +843,6 @@ def page_behavior_problem():
     dog_name = st.session_state.responses.get("dog_name", "강아지")
 
     st.markdown(f"## {dog_name}의 문제 행동에 대해 알려주세요")
-    st.markdown("<br>", unsafe_allow_html=True)
 
     show_progress_bar(3, 7)
 
@@ -805,7 +853,6 @@ def page_behavior_problem():
         with col2:
             st.image(mari_image, use_container_width=True)
 
-    st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("---")
 
     # 각 질문 렌더링
@@ -845,7 +892,6 @@ def page_environment():
     dog_name = st.session_state.responses.get("dog_name", "강아지")
 
     st.markdown(f"## {dog_name}의 생활 환경을 알려주세요")
-    st.markdown("<br>", unsafe_allow_html=True)
 
     show_progress_bar(4, 7)
 
@@ -856,7 +902,6 @@ def page_environment():
         with col2:
             st.image(mari_image, use_container_width=True)
 
-    st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("---")
 
     # 각 질문 렌더링 (조건부 처리)
@@ -922,7 +967,6 @@ def page_photos():
     dog_name = st.session_state.responses.get("dog_name", "강아지")
 
     st.markdown(f"## {dog_name}의 사진을 업로드해주세요")
-    st.markdown("<br>", unsafe_allow_html=True)
 
     show_progress_bar(5, 7)
 
@@ -933,7 +977,6 @@ def page_photos():
         with col2:
             st.image(mari_image, use_container_width=True)
 
-    st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("---")
 
     # 각 질문 렌더링
@@ -1049,7 +1092,7 @@ def page_analyzing():
 
     st.markdown('<div class="analyzing-page">', unsafe_allow_html=True)
 
-    st.title("🤖 AI 분석 중...")
+    st.title("AI 분석 중...")
     show_progress_bar(6, 7)
 
     # 마리 이미지
@@ -1230,14 +1273,27 @@ def page_analyzing():
 
 # ===== 페이지 7: 분석 결과 =====
 def page_result():
-    st.title("📊 분석 결과")
+    st.title("분석 결과")
     show_progress_bar(7, 7)
 
     result = st.session_state.analysis_result
     dog_name = st.session_state.responses.get("dog_name", "강아지")
 
     if result:
-        st.success(f"✅ {dog_name}의 행동 분석이 완료되었습니다!")
+        st.markdown(f"""
+            <div style='
+                background-color: #FDF0EE;
+                padding: 20px;
+                border-radius: 12px;
+                text-align: center;
+                border: 2px solid #E8826B;
+                margin-bottom: 20px;
+            '>
+                <p style='color: #E8826B; font-size: clamp(16px, 4vw, 20px); font-weight: bold; margin: 0;'>
+                    {dog_name}의 행동 분석이 완료되었습니다!
+                </p>
+            </div>
+        """, unsafe_allow_html=True)
 
         # 신뢰도 점수
         confidence = result.get("confidence_score", 0.8)
@@ -1259,17 +1315,17 @@ def page_result():
             st.markdown(final_text)
         else:
             # 하위 호환성: 구 형식 지원
-            st.markdown("## 📝 행동 분석 요약")
+            st.markdown("## 행동 분석 요약")
             st.markdown(result.get("behavior_summary", ""))
 
             st.markdown("---")
 
-            st.markdown("## 👨‍⚕️ 전문가 의견")
+            st.markdown("## 전문가 의견")
             st.markdown(result.get("expert_opinion", ""))
 
             st.markdown("---")
 
-            st.markdown("## 🎯 맞춤 훈련 플랜")
+            st.markdown("## 맞춤 훈련 플랜")
             action_plan = result.get("action_plan", [])
             for i, step in enumerate(action_plan, 1):
                 with st.expander(f"단계 {i}", expanded=(i == 1)):
@@ -1278,7 +1334,7 @@ def page_result():
             st.markdown("---")
 
             if result.get("additional_notes"):
-                st.warning(f"⚠️ {result['additional_notes']}")
+                st.warning(f"{result['additional_notes']}")
 
         st.markdown("---")
 

@@ -1,8 +1,7 @@
 """
-파일명: gpt4_vision.py
-목적: GPT-4o를 사용한 반려견 이미지 분석 (전처리, JSON Schema 강제)
-작성일: 2025-11-02
-수정일: 2025-01-26 - System role 추가, JSON Schema 강제, asyncio 개선
+파일명: gpt5_vision.py
+목적: GPT-5 Responses API를 사용한 반려견 이미지 분석 (JSON Schema + verbosity + reasoning_effort)
+작성일: 2025-01-26
 """
 
 import base64
@@ -17,7 +16,7 @@ from src.ai.schemas import VISION_SCHEMA
 
 # ===== 로깅 설정 =====
 
-logger = logging.getLogger("gpt4_vision")
+logger = logging.getLogger("gpt5_vision")
 logger.setLevel(logging.DEBUG)
 
 if not logger.handlers:
@@ -29,14 +28,14 @@ if not logger.handlers:
     file_handler = logging.FileHandler(log_file, mode='a', encoding='utf-8')
     file_handler.setLevel(logging.DEBUG)
     formatter = logging.Formatter(
-        '[%(asctime)s] [%(levelname)s] [GPT4] %(message)s',
+        '[%(asctime)s] [%(levelname)s] [GPT5-Vision] %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S'
     )
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
 
-# ===== GPT-4 Vision System Role =====
+# ===== GPT-5 Vision System Role =====
 
 VISION_SYSTEM_ROLE = """당신은 반려견 행동 전문가이자 이미지 분석가입니다.
 
@@ -53,7 +52,7 @@ VISION_SYSTEM_ROLE = """당신은 반려견 행동 전문가이자 이미지 분
 """
 
 
-# ===== GPT-4 Vision 프롬프트 =====
+# ===== GPT-5 Vision 프롬프트 =====
 
 VISION_ANALYSIS_PROMPT = """아래 이미지를 보고 다음 항목들을 상세히 분석해주세요:
 
@@ -91,14 +90,14 @@ VISION_ANALYSIS_PROMPT = """아래 이미지를 보고 다음 항목들을 상�
 """
 
 
-# ===== GPT-4 Vision API 호출 =====
+# ===== GPT-5 Vision API 호출 (Responses API) =====
 
-async def analyze_dog_image_with_gpt4(
+async def analyze_dog_image_with_gpt5(
     image_bytes: bytes,
     max_retries: int = 2
 ) -> Dict[str, str]:
     """
-    GPT-4o를 사용하여 반려견 이미지를 분석합니다 (JSON Schema 강제).
+    GPT-5 Responses API를 사용하여 반려견 이미지를 분석합니다.
 
     Args:
         image_bytes: 이미지 바이트 데이터 (최대 20MB)
@@ -117,7 +116,7 @@ async def analyze_dog_image_with_gpt4(
     Raises:
         Exception: API 호출 실패 시
     """
-    logger.info(f"GPT-4o 이미지 분석 시작 (크기: {len(image_bytes)} bytes)")
+    logger.info(f"GPT-5 이미지 분석 시작 (크기: {len(image_bytes)} bytes)")
 
     # 이미지를 base64로 인코딩
     try:
@@ -132,15 +131,15 @@ async def analyze_dog_image_with_gpt4(
 
     for attempt in range(max_retries + 1):
         try:
-            logger.debug(f"GPT-4o API 호출 시도 {attempt + 1}/{max_retries + 1}")
+            logger.debug(f"GPT-5 API 호출 시도 {attempt + 1}/{max_retries + 1}")
 
-            # GPT-4o API 호출 (JSON Schema 강제)
-            response = client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
+            # GPT-5 Responses API 호출 (JSON Schema 강제)
+            response = client.responses.create(
+                model="gpt-5",
+                input=[
                     {
                         "role": "system",
-                        "content": VISION_SYSTEM_ROLE  # System role 추가
+                        "content": VISION_SYSTEM_ROLE
                     },
                     {
                         "role": "user",
@@ -150,67 +149,46 @@ async def analyze_dog_image_with_gpt4(
                                 "text": VISION_ANALYSIS_PROMPT
                             },
                             {
-                                "type": "image_url",
+                                "type": "input_image",
                                 "image_url": {
                                     "url": f"data:image/jpeg;base64,{base64_image}",
-                                    "detail": "high"  # 고해상도 분석
+                                    "detail": "high"
                                 }
                             }
                         ]
                     }
                 ],
-                max_tokens=1500,
-                temperature=0.3,  # 일관성 있는 분석을 위해 낮은 temperature
+                max_output_tokens=1500,
+                temperature=0.3,
+                reasoning={"effort": "medium"},  # 중간 추론 강도
+                text={"verbosity": "low"},  # 간결한 요약
                 response_format={
                     "type": "json_schema",
-                    "json_schema": VISION_SCHEMA  # JSON Schema 강제
+                    "json_schema": VISION_SCHEMA
                 }
             )
 
-            # 응답 추출
-            result_text = response.choices[0].message.content
-            logger.info(f"GPT-4o 응답 받음 (길이: {len(result_text)} chars)")
+            # 응답 추출 (JSON Schema 사용 시 output_parsed)
+            vision_result = response.output_parsed
+            logger.info(f"GPT-5 응답 받음 (Vision 분석 완료)")
 
             # 사용량 로깅
             if hasattr(response, 'usage'):
                 logger.info(f"토큰 사용량: prompt={response.usage.prompt_tokens}, completion={response.usage.completion_tokens}, total={response.usage.total_tokens}")
 
-            # JSON 파싱
-            import json
-            import re
-
-            # JSON 블록 추출 (```json ... ``` 형식 지원)
-            json_match = re.search(r"```json\s*\n(.*?)\n```", result_text, re.DOTALL)
-            if json_match:
-                json_str = json_match.group(1)
-            else:
-                # JSON 블록 없으면 전체를 JSON으로 파싱 시도
-                json_str = result_text
-
-            try:
-                vision_result = json.loads(json_str)
-                logger.info("GPT-4o 분석 성공!")
-                return vision_result
-
-            except json.JSONDecodeError as e:
-                logger.error(f"JSON 파싱 실패: {str(e)}")
-
-                # 재시도할 것이므로 continue
-                if attempt < max_retries:
-                    continue
-                else:
-                    raise Exception(f"GPT-4o 응답을 JSON으로 파싱할 수 없습니다: {str(e)}")
+            logger.info("GPT-5 분석 성공!")
+            return vision_result
 
         except APIError as e:
             logger.error(f"OpenAI API 오류 (시도 {attempt + 1}/{max_retries + 1}): {str(e)}")
 
             if attempt < max_retries:
-                wait_time = (2 ** attempt) * 0.5  # 지수 백오프: 0.5s, 1s
+                wait_time = (2 ** attempt) * 0.5  # 지수 백오프
                 logger.warning(f"{wait_time}초 후 재시도...")
-                await asyncio.sleep(wait_time)  # 비동기 sleep
+                await asyncio.sleep(wait_time)
                 continue
             else:
-                error_msg = f"GPT-4o API 호출 실패 (시도 {max_retries + 1}회): {str(e)}"
+                error_msg = f"GPT-5 API 호출 실패 (시도 {max_retries + 1}회): {str(e)}"
                 logger.critical(error_msg)
                 raise Exception(error_msg)
 
@@ -232,7 +210,7 @@ async def analyze_dog_image_with_gpt4(
 
 def get_fallback_vision_analysis(dog_name: str = "강아지") -> Dict[str, str]:
     """
-    GPT-4o 실패 시 사용할 기본 분석 결과
+    GPT-5 실패 시 사용할 기본 분석 결과
 
     Args:
         dog_name: 강아지 이름
@@ -240,7 +218,7 @@ def get_fallback_vision_analysis(dog_name: str = "강아지") -> Dict[str, str]:
     Returns:
         dict: 기본 vision_analysis 구조
     """
-    logger.warning("GPT-4o 폴백 - 기본 분석 사용")
+    logger.warning("GPT-5 폴백 - 기본 분석 사용")
 
     return {
         "breed_analysis": "이미지 분석을 수행할 수 없어 품종 정보를 확인할 수 없습니다.",

@@ -33,7 +33,18 @@
       "Bash(del nul)",
       "Bash(streamlit run:*)",
       "Bash(Ask/venv/Scripts/python.exe:*)",
-      "Bash(AskvenvScriptspython.exe -m streamlit run Askapp.py)"
+      "Bash(AskvenvScriptspython.exe -m streamlit run Askapp.py)",
+      "WebFetch(domain:platform.openai.com)",
+      "Bash(move prompt_builder.py prompt_builder_claude.py)",
+      "WebFetch(domain:cookbook.openai.com)",
+      "WebFetch(domain:community.openai.com)",
+      "WebFetch(domain:www.datacamp.com)",
+      "Bash(taskkill:*)",
+      "Bash(timeout:*)",
+      "Bash(ping:*)",
+      "Bash(venvScriptspython.exe:*)",
+      "Bash(tasklist:*)",
+      "Bash(./venv/Scripts/python.exe:*)"
     ],
     "deny": [],
     "ask": []

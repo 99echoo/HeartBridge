@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str
     OPENAI_API_KEY: str
 
+    # AI Model Provider ("claude" 또는 "gpt")
+    AI_MODEL_PROVIDER: str = "claude"
+
     # Supabase
     SUPABASE_URL: str
     SUPABASE_KEY: str
@@ -47,6 +50,7 @@ class Settings(BaseSettings):
         env_file = Path(__file__).parent.parent / ".env"
         env_file_encoding = "utf-8"
         case_sensitive = True
+        extra = "ignore"  # .env의 알 수 없는 필드 무시 (PYTHONIOENCODING 등)
 
 
 # 싱글톤 인스턴스

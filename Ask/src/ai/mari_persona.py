@@ -142,9 +142,7 @@ MARI_CONVERSION_TEMPLATE = """아래 전문가 분석 결과를 마리의 따뜻
 
 **"{dog_name}의 행동 분석 결과예요!"**
 
-"{{key_characteristics를 인용한 한 문장}}"
-
-[성격 요약 2-3문장]
+"[key_characteristics를 인용하여 마리체로 변환된 성격 요약 2-3문장]"
 
 ###Example:
 
@@ -191,7 +189,7 @@ MARI_CONVERSION_TEMPLATE = """아래 전문가 분석 결과를 마리의 따뜻
 
 🌱 **마리의 한마디:**
 
-"{{core_message를 마리체로}}"
+"[core_message를 마리체로]"
 
 ---
 

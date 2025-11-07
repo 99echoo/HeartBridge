@@ -19,9 +19,8 @@ BASIC_INFO_QUESTIONS: List[Dict] = [
     },
     {
         "id": "dog_birth",
-        "question": "반려견의 나이를 알려주세요 (생년월을 작성해주세요, 추정 나이도 괜찮아요😄)",
-        "type": "text",
-        "placeholder": "예: 2022년 5월",
+        "question": "반려견의 나이를 알려주세요. 정확하지 않아도 괜찮아요😄",
+        "type": "select_year_month",
         "required": True,
     },
     {
@@ -213,7 +212,7 @@ PHOTO_QUESTIONS: List[Dict] = [
     },
     {
         "id": "behavior_media",
-        "question": "행동문제가 나타나는 순간의 영상이나 사진이 있다면 첨부해주세요 (선택)",
+        "question": "행동문제가 나타나는 순간의 영상이나 사진이 있다면 첨부해주세요(준비중인 기능이에요 !)",
         "type": "media",
         "description": "사진 또는 영상을 업로드할 수 있어요",
         "required": False,

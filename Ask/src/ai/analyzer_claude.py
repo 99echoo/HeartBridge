@@ -6,14 +6,15 @@
 
 import json
 import re
-import time
+import asyncio
 import logging
 from pathlib import Path
 from typing import Dict, Optional, List, Any
-import anthropic
+import anthropic  # Claude API
+# from openai import OpenAI  # OpenAI API (주석 처리)
 
 from config.settings import settings
-from src.ai.prompt_builder import (
+from src.ai.prompt_builder_claude import (
     build_expert_analysis_prompt,
     build_mari_conversion_prompt,
 )
@@ -80,7 +81,7 @@ async def call_claude_api(
     Args:
         system: 시스템 프롬프트
         user: 사용자 프롬프트
-        images: 이미지 리스트 (Optional) - [{"type": "base64", "media_type": "image/jpeg", "data": "..."}]
+        images: 이미지 리스트 (Optional)
         max_retries: 최대 재시도 횟수
         model: Claude 모델명
 
@@ -91,7 +92,6 @@ async def call_claude_api(
         Exception: API 호출 실패 시
     """
     client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-
     logger.info(f"Claude API 호출 시작 (model={model}, images={len(images) if images else 0}개)")
     logger.debug(f"System prompt 길이: {len(system)} chars")
     logger.debug(f"User prompt 길이: {len(user)} chars")
@@ -99,12 +99,8 @@ async def call_claude_api(
     for attempt in range(max_retries + 1):
         try:
             logger.debug(f"API 호출 시도 {attempt + 1}/{max_retries + 1}")
-
-            # 이미지가 있을 경우 Vision API 사용
             if images:
                 content_blocks = []
-
-                # 이미지 추가
                 for img in images:
                     content_blocks.append({
                         "type": "image",
@@ -114,64 +110,78 @@ async def call_claude_api(
                             "data": img["data"],
                         }
                     })
-
-                # 텍스트 프롬프트 추가
-                content_blocks.append({
-                    "type": "text",
-                    "text": user
-                })
-
+                content_blocks.append({"type": "text", "text": user})
                 message = client.messages.create(
-                    model=model,
-                    max_tokens=4096,
-                    system=system,
-                    messages=[
-                        {"role": "user", "content": content_blocks}
-                    ]
+                    model=model, max_tokens=4096, system=system,
+                    messages=[{"role": "user", "content": content_blocks}]
                 )
             else:
-                # 텍스트만 사용
                 message = client.messages.create(
-                    model=model,
-                    max_tokens=4096,
-                    system=system,
-                    messages=[
-                        {"role": "user", "content": user}
-                    ]
+                    model=model, max_tokens=4096, system=system,
+                    messages=[{"role": "user", "content": user}]
                 )
-
-            # 응답 추출
             response_text = message.content[0].text
             logger.info(f"Claude API 호출 성공 (응답 길이: {len(response_text)} chars)")
             return response_text
-
         except anthropic.APIError as e:
             logger.error(f"Anthropic API 오류 (시도 {attempt + 1}/{max_retries + 1}): {str(e)}")
-            logger.error(f"Error type: {type(e).__name__}")
             if attempt < max_retries:
-                # 재시도 (exponential backoff)
                 wait_time = 2 ** attempt
                 logger.warning(f"{wait_time}초 후 재시도...")
-                time.sleep(wait_time)
+                await asyncio.sleep(wait_time)
                 continue
             else:
-                # 최종 실패
                 error_msg = f"Claude API 호출 실패 (시도 {max_retries + 1}회): {str(e)}"
                 logger.critical(error_msg)
                 raise Exception(error_msg)
-
         except Exception as e:
             logger.error(f"예기치 않은 오류 (시도 {attempt + 1}/{max_retries + 1}): {str(e)}")
-            logger.error(f"Error type: {type(e).__name__}")
             if attempt < max_retries:
                 wait_time = 2 ** attempt
                 logger.warning(f"{wait_time}초 후 재시도...")
-                time.sleep(wait_time)
+                await asyncio.sleep(wait_time)
                 continue
             else:
                 error_msg = f"예기치 않은 오류: {str(e)}"
                 logger.critical(error_msg)
                 raise Exception(error_msg)
+
+
+# ===== GPT-5 Responses API 호출 (주석 처리) =====
+"""
+async def call_gpt5_api(
+    system: str,
+    user: str,
+    reasoning_effort: str = "medium",
+    max_retries: int = 2
+) -> str:
+    # GPT-5 Responses API를 호출합니다 (재시도 로직 포함).
+    from openai import OpenAI
+    client = OpenAI(api_key=settings.OPENAI_API_KEY)
+    logger.info(f"GPT-5 API 호출 시작 (reasoning_effort={reasoning_effort})")
+    input_text = f"System: {system}\\n\\nUser: {user}"
+    for attempt in range(max_retries + 1):
+        try:
+            response = client.responses.create(
+                model="gpt-5",
+                input=input_text,
+                reasoning={"effort": reasoning_effort}
+            )
+            response_text = response.text if hasattr(response, 'text') else str(response)
+            logger.info(f"GPT-5 API 호출 성공 (응답 길이: {len(response_text)} chars)")
+            return response_text
+        except Exception as e:
+            logger.error(f"GPT-5 API 오류 (시도 {attempt + 1}/{max_retries + 1}): {str(e)}")
+            if attempt < max_retries:
+                wait_time = 2 ** attempt
+                logger.warning(f"{wait_time}초 후 재시도...")
+                time.sleep(wait_time)
+                continue
+            else:
+                error_msg = f"GPT-5 API 호출 실패 (시도 {max_retries + 1}회): {str(e)}"
+                logger.critical(error_msg)
+                raise Exception(error_msg)
+"""
 
 
 # ===== JSON 파싱 및 검증 =====
@@ -289,12 +299,12 @@ async def analyze_two_stage(
         )
         logger.debug(f"프롬프트 생성 완료 (이미지 전송: {expert_prompt['images'] is not None})")
 
-        # API 호출
+        # Claude API 호출
         logger.info("1차 AI Claude API 호출 시작...")
         raw_response = await call_claude_api(
             system=expert_prompt["system"],
             user=expert_prompt["user"],
-            images=expert_prompt["images"],  # None이어야 함
+            images=expert_prompt["images"],
             max_retries=2
         )
 
@@ -348,15 +358,16 @@ async def analyze_two_stage(
             hardest_part=hardest_part
         )
 
-        # API 호출
-        logger.info("2차 AI Claude API 호출 시작...")
+        # Claude API 호출 (haiku 4.5 - 고품질 텍스트 변환)
+        logger.info("2차 AI Claude Sonnet 4.5 API 호출 시작...")
         final_text = await call_claude_api(
             system=mari_prompt["system"],
             user=mari_prompt["user"],
-            images=None,  # 2차는 텍스트만
-            max_retries=2
+            images=None,
+            max_retries=2,
+            model="claude-haiku-4-5"  # Sonnet 4.5 사용 (고품질)
         )
-        logger.info("2차 AI 변환 성공!")
+        logger.info("2차 AI 변환 성공 (Sonnet 4.5)!")
 
     except Exception as e:
         # 2차 AI 실패 시: 간단한 템플릿 변환

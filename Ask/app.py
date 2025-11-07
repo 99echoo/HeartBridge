@@ -6,9 +6,13 @@
 """
 
 import streamlit as st
+import streamlit.components.v1 as components
 import time
 import asyncio
+import base64
 from pathlib import Path
+from PIL import Image, ImageOps
+import io
 
 # 설정 파일 임포트
 from config.survey_questions import (
@@ -20,7 +24,8 @@ from config.survey_questions import (
     get_photo_questions,
 )
 from src.utils.mock_data import get_mock_result_by_problem
-from src.ai.analyzer import analyze_two_stage
+from src.ai.analyzer_factory import get_analyzer
+from src.utils.csv_logger import save_to_csv
 
 # 페이지 설정
 st.set_page_config(
@@ -74,7 +79,7 @@ st.markdown("""
         border: 2px solid #e0e0e0 !important;
         border-radius: clamp(6px, 2vw, 8px) !important;
         padding: clamp(10px, 2.5vw, 12px) !important;
-        font-size: clamp(14px, 3.5vw, 16px) !important;
+        font-size: clamp(16px, 4vw, 18px) !important;
         background-color: #ffffff !important;
         color: #333333 !important;
     }
@@ -246,26 +251,7 @@ st.markdown("""
         height: auto !important;
     }
 
-    /* 모바일에서 이미지 크기 제한 - 더 작게 */
-    @media (max-width: 768px) {
-        .stImage > img {
-            max-width: 15% !important;
-            width: 15% !important;
-        }
-
-        /* 컬럼 안의 이미지도 강제 */
-        div[data-testid="column"] .stImage > img {
-            max-width: 15% !important;
-            width: 15% !important;
-        }
-    }
-
-    /* 태블릿에서 이미지 크기 제한 */
-    @media (min-width: 769px) and (max-width: 1024px) {
-        .stImage > img {
-            max-width: 60% !important;
-        }
-    }
+    /* 모바일/태블릿 이미지 최대 크기 제한 제거 (width 파라미터 사용) */
 
     /* 섹션 제목 반응형 */
     h1, .stMarkdown h1 {
@@ -298,7 +284,87 @@ st.markdown("""
         border-bottom: 1px solid #e0e0e0 !important;
     }
 
-    /* 파일 업로더 스타일 개선 */
+    /* Selectbox 스타일 (다크모드 대응) */
+    .stSelectbox > div > div {
+        background-color: #ffffff !important;
+        color: #333333 !important;
+        border: 2px solid #e0e0e0 !important;
+        border-radius: 8px !important;
+    }
+
+    .stSelectbox label {
+        color: #333333 !important;
+        font-weight: 500 !important;
+    }
+
+    /* Selectbox 드롭다운 메뉴 */
+    .stSelectbox [data-baseweb="select"] > div {
+        background-color: #ffffff !important;
+        color: #333333 !important;
+    }
+
+    /* Selectbox 드롭다운 팝업 (listbox) */
+    [data-baseweb="popover"] {
+        background-color: #ffffff !important;
+    }
+
+    [data-baseweb="popover"] ul {
+        background-color: #ffffff !important;
+    }
+
+    /* Selectbox 옵션 항목 */
+    .stSelectbox [role="option"] {
+        background-color: #ffffff !important;
+        color: #333333 !important;
+    }
+
+    .stSelectbox [role="option"]:hover {
+        background-color: #f5f5f5 !important;
+    }
+
+    /* 드롭다운 리스트 전체 */
+    [role="listbox"] {
+        background-color: #ffffff !important;
+    }
+
+    [role="listbox"] li {
+        background-color: #ffffff !important;
+        color: #333333 !important;
+    }
+
+    [role="listbox"] li:hover {
+        background-color: #f5f5f5 !important;
+    }
+
+    /* 이미지 중앙 정렬 */
+    .stImage {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+    }
+
+    /* 페이지 제목 (h2) 중앙 정렬 - 여러 선택자 사용 */
+    h2 {
+        text-align: center !important;
+    }
+
+    .main h2 {
+        text-align: center !important;
+    }
+
+    .stMarkdown h2 {
+        text-align: center !important;
+    }
+
+    [data-testid="stMarkdown"] h2 {
+        text-align: center !important;
+    }
+
+    .main .stMarkdown h2 {
+        text-align: center !important;
+    }
+
+    /* 파일 업로더 스타일 개선 (다크모드 대응) */
     [data-testid="stFileUploader"] {
         background-color: #FFEAE6 !important;
         border: 2px dashed #E8826B !important;
@@ -311,6 +377,19 @@ st.markdown("""
         font-weight: bold !important;
     }
 
+    /* 파일 업로더 내부 텍스트 (다크모드 대응) */
+    [data-testid="stFileUploader"] span,
+    [data-testid="stFileUploader"] p,
+    [data-testid="stFileUploader"] div {
+        color: #333333 !important;
+    }
+
+    /* 파일 업로더 드래그 영역 */
+    [data-testid="stFileUploader"] section {
+        background-color: #ffffff !important;
+        border-color: #E8826B !important;
+    }
+
     /* 파일 업로더 버튼 */
     [data-testid="stFileUploader"] button {
         background-color: #E8826B !important;
@@ -320,6 +399,88 @@ st.markdown("""
 
     [data-testid="stFileUploader"] button:hover {
         background-color: #D67159 !important;
+    }
+
+    /* 파일 업로더 아이콘 색상 */
+    [data-testid="stFileUploader"] svg {
+        fill: #E8826B !important;
+    }
+
+    /* 체크박스 스타일 (다크모드 대응) */
+    .stCheckbox {
+        background-color: transparent !important;
+    }
+
+    /* 체크박스 라벨 텍스트 - 검정색 */
+    .stCheckbox label {
+        color: #333333 !important;
+        font-weight: 500 !important;
+    }
+
+    /* 체크박스 라벨 내부 span - 검정색 */
+    .stCheckbox label span {
+        color: #333333 !important;
+    }
+
+    /* 체크박스 input 컨테이너 */
+    .stCheckbox > label > div {
+        background-color: transparent !important;
+    }
+
+    /* 체크박스 input - 내부 흰색 */
+    .stCheckbox input[type="checkbox"] {
+        background-color: #ffffff !important;
+        border: 2px solid #e0e0e0 !important;
+    }
+
+    /* 체크박스 전체 div */
+    [data-testid="stCheckbox"] {
+        background-color: transparent !important;
+    }
+
+    /* 체크박스 라벨 (data-testid 사용) - 검정색 */
+    [data-testid="stCheckbox"] label {
+        color: #333333 !important;
+    }
+
+    /* 체크박스 라벨 내부 모든 텍스트 - 검정색 */
+    [data-testid="stCheckbox"] label p,
+    [data-testid="stCheckbox"] label span,
+    [data-testid="stCheckbox"] label div {
+        color: #333333 !important;
+    }
+
+    /* 체크박스 위젯 전체 배경 */
+    [data-baseweb="checkbox"] {
+        background-color: transparent !important;
+    }
+
+    /* 체크박스 체크마크 배경 - 내부 흰색 */
+    [data-baseweb="checkbox"] > div {
+        background-color: #ffffff !important;
+        border-color: #e0e0e0 !important;
+    }
+
+    /* 체크 시 내부도 흰색 유지 */
+    [data-baseweb="checkbox"] input:checked + div {
+        background-color: #ffffff !important;
+        border-color: #e0e0e0 !important;
+    }
+
+    /* 체크박스 포커스 시 outline 제거 (산호색 테두리 제거) */
+    .stCheckbox input[type="checkbox"]:focus {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    [data-baseweb="checkbox"] input:focus + div {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    /* 체크박스 체크마크 색상 */
+    [data-baseweb="checkbox"] svg {
+        fill: #333333 !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -334,6 +495,15 @@ st.markdown("""
 
 
 # 헬퍼 함수
+def scroll_to_top():
+    """페이지 스크롤을 맨 위로 이동"""
+    components.html("""
+        <script>
+        window.parent.document.querySelector('section.main').scrollTo(0, 0);
+        </script>
+    """, height=0)
+
+
 def initialize_session_state():
     """세션 스테이트 초기화"""
     if "page" not in st.session_state:
@@ -370,10 +540,123 @@ def show_progress_bar(step, total=7):
 
 def load_mari_image(image_name):
     """마리 이미지 로드"""
-    image_path = Path("assets/images") / image_name
+    # 현재 스크립트의 디렉토리를 기준으로 절대 경로 설정
+    script_dir = Path(__file__).parent
+    image_path = script_dir / "assets" / "images" / image_name
     if image_path.exists():
         return str(image_path)
     return None
+
+
+def get_image_base64(image_path):
+    """이미지를 base64로 인코딩"""
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode()
+
+
+def fix_image_orientation(image_file):
+    """
+    EXIF orientation 메타데이터를 처리하여 이미지를 올바르게 회전합니다.
+
+    Args:
+        image_file: Streamlit UploadedFile 객체 또는 bytes
+
+    Returns:
+        PIL.Image: EXIF orientation이 처리된 이미지 (실패 시 None)
+    """
+    if image_file is None:
+        return None
+
+    image_bytes = None
+
+    try:
+        # UploadedFile 객체인 경우 읽기
+        if hasattr(image_file, 'read'):
+            # 현재 파일 포인터 위치 저장
+            if hasattr(image_file, 'tell'):
+                original_position = image_file.tell()
+            else:
+                original_position = 0
+
+            # 처음으로 이동
+            if hasattr(image_file, 'seek'):
+                image_file.seek(0)
+
+            image_bytes = image_file.read()
+
+            # 원래 위치로 복원
+            if hasattr(image_file, 'seek'):
+                image_file.seek(original_position)
+        else:
+            image_bytes = image_file
+
+        # 빈 bytes 체크
+        if not image_bytes or len(image_bytes) == 0:
+            return None
+
+        # PIL Image로 열기
+        image = Image.open(io.BytesIO(image_bytes))
+
+        # EXIF orientation 자동 처리
+        # 이 함수는 EXIF 메타데이터를 읽고 필요한 경우 이미지를 회전시킴
+        # exif_transpose가 None을 반환하면 원본 이미지 반환
+        rotated_image = ImageOps.exif_transpose(image)
+        return rotated_image if rotated_image is not None else image
+
+    except Exception as e:
+        # EXIF 처리 실패 시 원본 이미지 로드 시도
+        try:
+            if image_bytes and len(image_bytes) > 0:
+                return Image.open(io.BytesIO(image_bytes))
+        except:
+            pass
+
+        # 모든 시도 실패
+        return None
+
+
+def convert_image_to_bytes(image):
+    """
+    PIL Image를 bytes로 변환합니다.
+
+    Args:
+        image: PIL.Image 객체 (None 가능)
+
+    Returns:
+        bytes: JPEG 형식의 이미지 바이트 (실패 시 None)
+    """
+    if image is None:
+        return None
+
+    try:
+        buffer = io.BytesIO()
+
+        # RGB 모드로 변환 (RGBA나 다른 모드일 경우 JPEG 저장 오류 방지)
+        if image.mode in ('RGBA', 'LA', 'P'):
+            # 투명 배경을 흰색으로 변환
+            background = Image.new('RGB', image.size, (255, 255, 255))
+            if image.mode == 'P':
+                image = image.convert('RGBA')
+            background.paste(image, mask=image.split()[-1] if image.mode in ('RGBA', 'LA') else None)
+            image = background
+        elif image.mode != 'RGB':
+            image = image.convert('RGB')
+
+        # JPEG로 저장
+        image.save(buffer, format='JPEG', quality=95)
+        buffer.seek(0)
+
+        image_bytes = buffer.read()
+
+        # 빈 bytes 체크
+        if not image_bytes or len(image_bytes) == 0:
+            return None
+
+        return image_bytes
+
+    except Exception as e:
+        # 변환 실패
+        return None
 
 
 def render_question(q: dict):
@@ -636,6 +919,61 @@ def render_question(q: dict):
 
         return list(time_range)
 
+    # 연/월 셀렉트박스
+    elif q_type == "select_year_month":
+        # 기본값 처리
+        if isinstance(default_value, dict):
+            default_year = default_value.get("year", "2020")
+            default_month = default_value.get("month", "1")
+        else:
+            default_year = "2020"
+            default_month = "1"
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            # 2010년부터 2024년까지 + "모름" 옵션
+            year_options = list(range(2024, 2009, -1)) + ["모름"]
+
+            # 기본 인덱스 찾기
+            try:
+                if default_year == "모름":
+                    year_index = year_options.index("모름")
+                else:
+                    year_index = year_options.index(int(default_year))
+            except (ValueError, TypeError):
+                year_index = 0
+
+            year = st.selectbox(
+                "년도",
+                options=year_options,
+                index=year_index,
+                key=f"{q_id}_year"
+            )
+
+        with col2:
+            # 1월부터 12월까지 + "모름" 옵션
+            month_options = list(range(1, 13)) + ["모름"]
+
+            # 기본 인덱스 찾기
+            try:
+                if default_month == "모름":
+                    month_index = month_options.index("모름")
+                else:
+                    month_index = month_options.index(int(default_month))
+            except (ValueError, TypeError):
+                month_index = 0
+
+            month = st.selectbox(
+                "월",
+                options=month_options,
+                index=month_index,
+                key=f"{q_id}_month"
+            )
+
+        # 딕셔너리로 반환
+        return {"year": str(year), "month": str(month)}
+
     # 이미지 업로드
     elif q_type == "image":
         uploaded_file = st.file_uploader(
@@ -648,36 +986,52 @@ def render_question(q: dict):
             st.success("✅ 이미지가 업로드되었습니다!")
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
-                st.image(uploaded_file, caption="업로드된 이미지", use_container_width=True)
+                # EXIF orientation 처리
+                fixed_image = fix_image_orientation(uploaded_file)
+                if fixed_image:
+                    st.image(fixed_image, caption="업로드된 이미지", use_container_width=True)
+                else:
+                    st.error("이미지를 표시할 수 없습니다. 다른 이미지를 업로드해주세요.")
 
         return uploaded_file
 
-    # 미디어 (사진/영상) 업로드
+    # 미디어 (사진/영상) 업로드 - 준비 중
     elif q_type == "media":
+        # Browse files 버튼을 "준비중이에요!"로 변경하는 CSS
+        st.markdown("""
+            <style>
+            /* 파일 업로더 버튼 텍스트 "Browse files"를 "준비중이에요!"로 변경 */
+            [data-testid="stFileUploader"]:has(button:disabled) button span {
+                visibility: hidden;
+                position: relative;
+            }
+            [data-testid="stFileUploader"]:has(button:disabled) button span::after {
+                content: "준비중이에요! 🚧";
+                visibility: visible;
+                position: absolute;
+                left: 0;
+                top: 0;
+            }
+            </style>
+        """, unsafe_allow_html=True)
+
+        # 비활성화된 파일 업로더
         uploaded_file = st.file_uploader(
             q.get("description", "사진 또는 영상을 업로드해주세요"),
             type=["jpg", "jpeg", "png", "mp4", "mov", "avi"],
             key=f"{q_id}_uploader",
+            disabled=True  # 비활성화
         )
 
-        if uploaded_file:
-            st.success("✅ 파일이 업로드되었습니다!")
-            file_type = uploaded_file.type.split("/")[0]
-
-            col1, col2, col3 = st.columns([1, 2, 1])
-            with col2:
-                if file_type == "image":
-                    st.image(uploaded_file, caption="업로드된 이미지", use_container_width=True)
-                else:
-                    st.video(uploaded_file)
-
-        return uploaded_file
+        return None  # 준비 중이므로 None 반환
 
     return None
 
 
 # ===== 페이지 0: 랜딩 페이지 =====
 def page_landing():
+    scroll_to_top()
+
     # 랜딩 페이지 전용 스타일 (버튼 텍스트 흰색)
     st.markdown("""
         <style>
@@ -714,13 +1068,17 @@ def page_landing():
         unsafe_allow_html=True
     )
 
-    # 마리 이미지 표시 (중앙 정렬)
+    # 마리 이미지 표시 (중앙 정렬 박스)
     mari_image = load_mari_image("Mari_image_normal_1.png")
     if mari_image:
-        # 중앙 정렬
-        col1, col2, col3 = st.columns([1.5, 1, 1.5])
-        with col2:
-            st.image(mari_image, use_container_width=True)
+        st.markdown(
+            f'''
+            <div style="display: flex; justify-content: center; align-items: center; margin: 20px 0;">
+                <img src="data:image/png;base64,{get_image_base64(mari_image)}" width="200" />
+            </div>
+            ''',
+            unsafe_allow_html=True
+        )
     else:
         # 이미지가 없을 경우 이모지 표시
         st.markdown(
@@ -741,18 +1099,23 @@ def page_landing():
 
 # ===== 페이지 1: 기본 정보 =====
 def page_basic_info():
+    scroll_to_top()
+
     questions = get_basic_info_questions()
 
     st.markdown("## 우리 강아지에 대해 알려주세요")
 
-    show_progress_bar(1, 7)
-
     # 마리 이미지
     mari_image = load_mari_image("Mari_image_normal_1.png")
     if mari_image:
-        col1, col2, col3 = st.columns([1.5, 1, 1.5])
-        with col2:
-            st.image(mari_image, use_container_width=True)
+        st.markdown(
+            f'''
+            <div style="display: flex; justify-content: center; align-items: center; margin: 20px 0;">
+                <img src="data:image/png;base64,{get_image_base64(mari_image)}" width="200" />
+            </div>
+            ''',
+            unsafe_allow_html=True
+        )
 
     st.markdown("---")
 
@@ -790,19 +1153,24 @@ def page_basic_info():
 
 # ===== 페이지 2: 성향 파악 =====
 def page_personality():
+    scroll_to_top()
+
     questions = get_personality_questions()
     dog_name = st.session_state.responses.get("dog_name", "강아지")
 
     st.markdown(f"## {dog_name}의 평소 성향을 알려주세요")
 
-    show_progress_bar(2, 7)
-
     # 마리 이미지
     mari_image = load_mari_image("Mari_image_normal_2.png")
     if mari_image:
-        col1, col2, col3 = st.columns([1.5, 1, 1.5])
-        with col2:
-            st.image(mari_image, use_container_width=True)
+        st.markdown(
+            f'''
+            <div style="display: flex; justify-content: center; align-items: center; margin: 20px 0;">
+                <img src="data:image/png;base64,{get_image_base64(mari_image)}" width="200" />
+            </div>
+            ''',
+            unsafe_allow_html=True
+        )
 
     st.markdown("---")
 
@@ -839,19 +1207,24 @@ def page_personality():
 
 # ===== 페이지 3: 문제 행동 관련 =====
 def page_behavior_problem():
+    scroll_to_top()
+
     questions = get_behavior_problem_questions()
     dog_name = st.session_state.responses.get("dog_name", "강아지")
 
     st.markdown(f"## {dog_name}의 문제 행동에 대해 알려주세요")
 
-    show_progress_bar(3, 7)
-
     # 마리 이미지
     mari_image = load_mari_image("Mari_image_normal_3.png")
     if mari_image:
-        col1, col2, col3 = st.columns([1.5, 1, 1.5])
-        with col2:
-            st.image(mari_image, use_container_width=True)
+        st.markdown(
+            f'''
+            <div style="display: flex; justify-content: center; align-items: center; margin: 20px 0;">
+                <img src="data:image/png;base64,{get_image_base64(mari_image)}" width="200" />
+            </div>
+            ''',
+            unsafe_allow_html=True
+        )
 
     st.markdown("---")
 
@@ -888,19 +1261,24 @@ def page_behavior_problem():
 
 # ===== 페이지 4: 환경 정보 =====
 def page_environment():
+    scroll_to_top()
+
     questions = get_environment_questions()
     dog_name = st.session_state.responses.get("dog_name", "강아지")
 
     st.markdown(f"## {dog_name}의 생활 환경을 알려주세요")
 
-    show_progress_bar(4, 7)
-
     # 마리 이미지
     mari_image = load_mari_image("Mari_image_normal_4.png")
     if mari_image:
-        col1, col2, col3 = st.columns([1.5, 1, 1.5])
-        with col2:
-            st.image(mari_image, use_container_width=True)
+        st.markdown(
+            f'''
+            <div style="display: flex; justify-content: center; align-items: center; margin: 20px 0;">
+                <img src="data:image/png;base64,{get_image_base64(mari_image)}" width="200" />
+            </div>
+            ''',
+            unsafe_allow_html=True
+        )
 
     st.markdown("---")
 
@@ -963,19 +1341,24 @@ def page_environment():
 
 # ===== 페이지 5: 사진 및 참고자료 =====
 def page_photos():
+    scroll_to_top()
+
     questions = get_photo_questions()
     dog_name = st.session_state.responses.get("dog_name", "강아지")
 
     st.markdown(f"## {dog_name}의 사진을 업로드해주세요")
 
-    show_progress_bar(5, 7)
-
     # 마리 이미지
     mari_image = load_mari_image("Mari_image_Answer.png")
     if mari_image:
-        col1, col2, col3 = st.columns([1.5, 1, 1.5])
-        with col2:
-            st.image(mari_image, use_container_width=True)
+        st.markdown(
+            f'''
+            <div style="display: flex; justify-content: center; align-items: center; margin: 20px 0;">
+                <img src="data:image/png;base64,{get_image_base64(mari_image)}" width="200" />
+            </div>
+            ''',
+            unsafe_allow_html=True
+        )
 
     st.markdown("---")
 
@@ -1011,6 +1394,8 @@ def page_photos():
 
 # ===== 페이지 6: AI 분석 중 =====
 def page_analyzing():
+    scroll_to_top()
+
     # 마리 이미지 애니메이션 CSS
     st.markdown("""
         <style>
@@ -1093,7 +1478,6 @@ def page_analyzing():
     st.markdown('<div class="analyzing-page">', unsafe_allow_html=True)
 
     st.title("AI 분석 중...")
-    show_progress_bar(6, 7)
 
     # 마리 이미지
     mari_image = load_mari_image("Mari_image_in_bag.png")
@@ -1137,17 +1521,20 @@ def page_analyzing():
                 return
 
             # 이미지를 bytes로 변환 (UploadedFile 객체인 경우)
-            if hasattr(dog_photo, 'read'):
-                dog_photo_bytes = dog_photo.read()
-            else:
-                dog_photo_bytes = dog_photo
+            # EXIF orientation을 처리하여 올바른 방향으로 변환
+            fixed_dog_photo = fix_image_orientation(dog_photo)
+            dog_photo_bytes = convert_image_to_bytes(fixed_dog_photo)
+
+            # 이미지 처리 실패 체크
+            if dog_photo_bytes is None:
+                st.error("이미지 처리 중 오류가 발생했습니다. 다른 이미지를 업로드해주세요.")
+                st.markdown('</div>', unsafe_allow_html=True)
+                return
 
             behavior_media_bytes = None
             if behavior_media:
-                if hasattr(behavior_media, 'read'):
-                    behavior_media_bytes = behavior_media.read()
-                else:
-                    behavior_media_bytes = behavior_media
+                fixed_behavior_media = fix_image_orientation(behavior_media)
+                behavior_media_bytes = convert_image_to_bytes(fixed_behavior_media)
 
             # 분석 단계 정의 (동적 프로그레스) - 90%까지만
             analysis_steps = [
@@ -1174,8 +1561,8 @@ def page_analyzing():
                     unsafe_allow_html=True
                 )
 
-                # 속도를 늦춤 (0.8초 대기)
-                time.sleep(0.8)
+                # 속도를 늦춤 (3초 대기)
+                time.sleep(3.0)
 
             # 2단계 AI 분석 실행 (실제 분석)
             status_text.text("🚀 AI 분석 진행 중...")
@@ -1184,7 +1571,8 @@ def page_analyzing():
                 unsafe_allow_html=True
             )
 
-            # 실제 AI 분석 실행
+            # 실제 AI 분석 실행 (Factory 패턴으로 analyzer 선택)
+            analyze_two_stage = get_analyzer()
             result = asyncio.run(
                 analyze_two_stage(
                     responses=st.session_state.responses,
@@ -1195,6 +1583,16 @@ def page_analyzing():
 
             # AI 분석 완료 시그널 받음!
             st.session_state.analysis_result = result
+
+            # CSV 저장
+            try:
+                csv_path = save_to_csv(
+                    responses=st.session_state.responses,
+                    analysis_result=result
+                )
+                print(f"CSV 저장 완료: {csv_path}")
+            except Exception as csv_error:
+                print(f"CSV 저장 실패: {str(csv_error)}")
 
             # 완료 시그널 받은 후 100% + 완료 메시지
             progress_bar.progress(100)
@@ -1231,7 +1629,7 @@ def page_analyzing():
                     f'<div class="dynamic-message blinking">{dynamic_messages[msg_idx]}</div>',
                     unsafe_allow_html=True
                 )
-                time.sleep(0.8)
+                time.sleep(3.0)
 
             # 폴백: Mock 데이터
             main_concerns = st.session_state.responses.get("main_concerns", [])
@@ -1257,6 +1655,16 @@ def page_analyzing():
                 "raw_json": {}
             }
 
+            # CSV 저장 (Mock 데이터)
+            try:
+                csv_path = save_to_csv(
+                    responses=st.session_state.responses,
+                    analysis_result=st.session_state.analysis_result
+                )
+                print(f"CSV 저장 완료 (Mock): {csv_path}")
+            except Exception as csv_error:
+                print(f"CSV 저장 실패 (Mock): {str(csv_error)}")
+
             # Mock 데이터 완료 시그널
             progress_bar.progress(100)
             status_text.text("✅ 분석 완료!")
@@ -1273,31 +1681,22 @@ def page_analyzing():
 
 # ===== 페이지 7: 분석 결과 =====
 def page_result():
+    scroll_to_top()
+
     st.title("분석 결과")
-    show_progress_bar(7, 7)
 
     result = st.session_state.analysis_result
     dog_name = st.session_state.responses.get("dog_name", "강아지")
 
     if result:
+        # 분석 완료 메시지 (중앙 정렬, 검은색 텍스트)
         st.markdown(f"""
-            <div style='
-                background-color: #FDF0EE;
-                padding: 20px;
-                border-radius: 12px;
-                text-align: center;
-                border: 2px solid #E8826B;
-                margin-bottom: 20px;
-            '>
-                <p style='color: #E8826B; font-size: clamp(16px, 4vw, 20px); font-weight: bold; margin: 0;'>
+            <div style='text-align: center; margin-bottom: 20px;'>
+                <p style='color: #333333; font-size: clamp(16px, 4vw, 20px); font-weight: bold; margin: 0;'>
                     {dog_name}의 행동 분석이 완료되었습니다!
                 </p>
             </div>
         """, unsafe_allow_html=True)
-
-        # 신뢰도 점수
-        confidence = result.get("confidence_score", 0.8)
-        st.metric("분석 신뢰도", f"{int(confidence * 100)}%")
 
         st.markdown("---")
 
@@ -1306,7 +1705,10 @@ def page_result():
         if dog_photo:
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
-                st.image(dog_photo, caption=f"{dog_name}의 사진", use_container_width=True)
+                # EXIF orientation 처리
+                fixed_image = fix_image_orientation(dog_photo)
+                if fixed_image:
+                    st.image(fixed_image, caption=f"{dog_name}의 사진", use_container_width=True)
             st.markdown("---")
 
         # 마리의 최종 분석 결과 (Markdown 전체)

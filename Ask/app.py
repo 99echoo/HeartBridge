@@ -5,6 +5,14 @@
 수정일: 2025-01-26 - 5개 섹션 구조로 재작성
 """
 
+# UTF-8 인코딩 강제 (Windows CP949 환경 대응)
+import sys
+import io as _io
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout = _io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+if sys.stderr.encoding != 'utf-8':
+    sys.stderr = _io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
 import streamlit as st
 import streamlit.components.v1 as components
 import time

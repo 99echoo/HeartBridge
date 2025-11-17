@@ -44,7 +44,8 @@
       "Bash(ping:*)",
       "Bash(venvScriptspython.exe:*)",
       "Bash(tasklist:*)",
-      "Bash(./venv/Scripts/python.exe:*)"
+      "Bash(./venv/Scripts/python.exe:*)",
+      "Bash(del Asknul)"
     ],
     "deny": [],
     "ask": []

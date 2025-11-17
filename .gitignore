@@ -63,6 +63,12 @@ logs/
 # Data
 data/uploads/
 data/temp/
+*.csv
+**/survey_results.csv
+
+# Temporary files
+nul
+**/nul
 
 # Google API Credentials
 credentials.json

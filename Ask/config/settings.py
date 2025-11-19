@@ -21,7 +21,10 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str
 
     # AI Model Provider ("claude" 또는 "gpt")
-    AI_MODEL_PROVIDER: str = "claude"
+    AI_MODEL_PROVIDER: str = "gpt"
+    AI_TEXT_MODEL: str = "gpt-5.1"
+    AI_TEXT_TEMPERATURE_EXPERT: float = 0.4
+    AI_TEXT_TEMPERATURE_MARI: float = 0.7
 
     # Supabase
     SUPABASE_URL: str

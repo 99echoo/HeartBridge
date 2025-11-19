@@ -425,6 +425,18 @@
     border: 1px solid #ffd2ec;
 }
 
+.mari-core-message {
+    font-weight: 600;
+    color: #c3526f;
+    margin-top: 12px;
+}
+
+.mari-final-quote {
+    margin-top: 16px;
+    font-style: italic;
+    color: #8a4f5c;
+}
+
     .stMarkdown h2 {
         text-align: center !important;
     }

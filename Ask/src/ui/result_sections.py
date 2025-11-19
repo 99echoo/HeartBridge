@@ -94,11 +94,30 @@ def render_confidence_badge(score: float | None) -> None:
     )
 
 
-def render_mari_story(text: str) -> None:
+def render_mari_story(story: dict | str | None) -> None:
+    if not story:
+        return
+
+    if isinstance(story, str):
+        st.markdown(
+            f"""
+            <div class="result-card mari-card">
+                {story}
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        return
+
+    header = story.get("header", {})
+    closing = story.get("mari_closing", {})
     st.markdown(
         f"""
         <div class="result-card mari-card">
-            {text}
+            <h4>{header.get('title', '마리의 이야기')}</h4>
+            <p>{header.get('summary', '')}</p>
+            <div class="mari-core-message">{closing.get('core_message', '')}</div>
+            <div class="mari-final-quote">{closing.get('final_quote', '')}</div>
         </div>
         """,
         unsafe_allow_html=True,

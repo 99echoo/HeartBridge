@@ -67,7 +67,7 @@ async def call_gpt5_api(
     system: str,
     user: str,
     max_retries: int = 3,
-    model: str = "gpt-5",
+    model: str = None,
     use_json_schema: bool = False,
     json_schema: Optional[Dict[str, Any]] = None,
     temperature: float = 0.7,
@@ -81,7 +81,7 @@ async def call_gpt5_api(
         system: 시스템 프롬프트
         user: 사용자 프롬프트
         max_retries: 최대 재시도 횟수
-        model: GPT 모델명 (gpt-5)
+        model: GPT 모델명 (settings.AI_TEXT_MODEL)
         use_json_schema: JSON Schema 강제 사용 여부
         json_schema: JSON Schema 객체
         temperature: 온도 (창의성)
@@ -94,6 +94,8 @@ async def call_gpt5_api(
     Raises:
         Exception: API 호출 실패 시
     """
+    if model is None:
+        model = settings.AI_TEXT_MODEL
     client = OpenAI(api_key=settings.OPENAI_API_KEY)
     logger.info(f"GPT-5 Responses API 호출 시작 (model={model}, json_schema={use_json_schema}, temp={temperature}, verbosity={verbosity}, reasoning={reasoning_effort})")
     logger.debug(f"System prompt 길이: {len(system)} chars")
@@ -349,10 +351,10 @@ async def analyze_two_stage(
                     system=expert_prompt["system"],
                     user=expert_prompt["user"],
                     max_retries=3,
-                    model="gpt-5",
+                    model=settings.AI_TEXT_MODEL,
                     use_json_schema=True,
                     json_schema=EXPERT_ANALYSIS_SCHEMA,
-                    temperature=0.4,
+                    temperature=settings.AI_TEXT_TEMPERATURE_EXPERT,
                     verbosity="medium",  # 중간 상세도
                     reasoning_effort="medium"  # 중간 추론 강도
                 )
@@ -445,18 +447,21 @@ async def analyze_two_stage(
                     hardest_part=hardest_part
                 )
 
-                # GPT-5 Responses API 호출 (텍스트 모드)
-                logger.info("2차 AI GPT-5 API 호출 시작 (텍스트 모드)...")
-                final_text = await call_gpt5_api(
+                # GPT-5 Responses API 호출 (JSON Schema 모드)
+                logger.info("2차 AI GPT-5 API 호출 시작 (JSON Schema)...")
+                mari_json_str = await call_gpt5_api(
                     system=mari_prompt["system"],
                     user=mari_prompt["user"],
                     max_retries=2,
-                    model="gpt-5",
-                    use_json_schema=False,
-                    temperature=0.7,
-                    verbosity="high",  # 높은 상세도 (친절한 톤)
-                    reasoning_effort="minimal"  # 최소 추론 (빠른 응답)
+                    model=settings.AI_TEXT_MODEL,
+                    use_json_schema=True,
+                    json_schema=MARI_NARRATIVE_SCHEMA,
+                    temperature=settings.AI_TEXT_TEMPERATURE_MARI,
+                    verbosity="medium",
+                    reasoning_effort="minimal"
                 )
+                mari_story = parse_json_response(mari_json_str)
+                final_text = format_mari_story_markdown(mari_story)
                 logger.info("2차 AI 변환 성공!")
 
         except Exception as e:
@@ -464,6 +469,7 @@ async def analyze_two_stage(
             logger.error("===== 2차 AI 실패 - simple_template_conversion 폴백 =====")
             logger.error(f"Error: {str(e)}", exc_info=True)
             final_text = simple_template_conversion(raw_json, dog_name, dog_age)
+            mari_story = None
 
         tracker.mark_event("mari_template_fallback", mari_template_used)
 
@@ -471,7 +477,8 @@ async def analyze_two_stage(
         return {
             "final_text": final_text,
             "confidence_score": raw_json.get("confidence_score", 0.5),
-            "raw_json": raw_json
+            "raw_json": raw_json,
+            "mari_story": mari_story
         }
 
     except Exception as unexpected:
@@ -548,3 +555,50 @@ def simple_template_conversion(raw_json: dict, dog_name: str, dog_age: str) -> s
 """
 
     return text
+
+
+def format_mari_story_markdown(mari_story: dict | None) -> str:
+    if not mari_story:
+        return ""
+
+    header = mari_story.get("header", {})
+    solutions = mari_story.get("solutions", [])
+    guidance = mari_story.get("guidance", [])
+    closing = mari_story.get("mari_closing", {})
+
+    parts: list[str] = []
+    title = header.get("title")
+    if title:
+        parts.append(f"**\"{title}\"**\n")
+    summary = header.get("summary")
+    if summary:
+        parts.append(summary + "\n")
+
+    if solutions:
+        parts.append("\n---\n\n🐾 **이런 솔루션이 가장 잘 맞아요!**\n")
+        for idx, sol in enumerate(solutions, start=1):
+            steps = "\n".join(f"- {step}" for step in sol.get("steps", []))
+            parts.append(
+                f"{idx}️⃣ **{sol.get('title', '솔루션')}**\n"
+                f"{sol.get('content', '')}\n{steps}\n"
+                f"✨ 기대 효과: {sol.get('outcome', '')}\n\n"
+            )
+
+    if guidance:
+        parts.append("---\n\n🐾 **앞으로 이렇게 해보세요!**\n")
+        for item in guidance:
+            parts.append(
+                f"- **{item.get('principle', '')}**: {item.get('description', '')}\n"
+                f"  → {item.get('action', '')}\n"
+            )
+
+    core_message = closing.get("core_message")
+    final_quote = closing.get("final_quote")
+    if core_message or final_quote:
+        parts.append("\n---\n\n")
+    if core_message:
+        parts.append(core_message + "\n\n")
+    if final_quote:
+        parts.append(final_quote)
+
+    return "".join(parts).strip()

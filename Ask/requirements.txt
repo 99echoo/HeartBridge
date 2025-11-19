@@ -6,7 +6,7 @@ streamlit>=1.40.0
 
 # AI/ML
 anthropic==0.18.1           # Claude Sonnet 4.5 API
-openai>=1.0.0               # GPT-4o API (이미지 전처리)
+openai>=1.37.0              # GPT-5.1 Responses / GPT-4o Vision
 pillow>=10.3.0              # 이미지 처리 및 인스타그램 카드 생성
 
 # Database & Storage

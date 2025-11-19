@@ -177,6 +177,72 @@ EXPERT_ANALYSIS_SCHEMA: Dict[str, Any] = {
     "strict": True
 }
 
+MARI_NARRATIVE_SCHEMA: Dict[str, Any] = {
+    "name": "MariNarrative",
+    "schema": {
+        "type": "object",
+        "required": ["header", "solutions", "guidance", "mari_closing"],
+        "properties": {
+            "header": {
+                "type": "object",
+                "required": ["title", "summary"],
+                "properties": {
+                    "title": {"type": "string", "maxLength": 120},
+                    "summary": {"type": "string", "maxLength": 800},
+                },
+                "additionalProperties": False,
+            },
+            "solutions": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "required": ["title", "content", "steps", "outcome"],
+                    "properties": {
+                        "title": {"type": "string", "maxLength": 80},
+                        "content": {"type": "string", "maxLength": 500},
+                        "steps": {
+                            "type": "array",
+                            "items": {"type": "string", "maxLength": 300},
+                            "minItems": 2,
+                            "maxItems": 4,
+                        },
+                        "outcome": {"type": "string", "maxLength": 200},
+                    },
+                    "additionalProperties": False,
+                },
+                "minItems": 3,
+                "maxItems": 3,
+            },
+            "guidance": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "required": ["principle", "description", "action"],
+                    "properties": {
+                        "principle": {"type": "string", "maxLength": 80},
+                        "description": {"type": "string", "maxLength": 400},
+                        "action": {"type": "string", "maxLength": 400},
+                    },
+                    "additionalProperties": False,
+                },
+                "minItems": 3,
+                "maxItems": 3,
+            },
+            "mari_closing": {
+                "type": "object",
+                "required": ["core_message", "final_quote"],
+                "properties": {
+                    "core_message": {"type": "string", "maxLength": 300},
+                    "final_quote": {"type": "string", "maxLength": 200},
+                },
+                "additionalProperties": False,
+            },
+        },
+        "additionalProperties": False,
+    },
+    "strict": True,
+}
+
 
 # ===== Normalization용 기본값 =====
 

@@ -634,19 +634,106 @@ def build_mock_analysis_result(responses: dict) -> dict:
     }
 
 
+def normalize_mari_data_for_rendering(mari_story: dict) -> dict:
+    """
+    마리 변환 결과를 기존 렌더링 함수 형식에 맞게 변환.
+
+    Args:
+        mari_story: 2차 AI 마리 변환 결과 JSON
+
+    Returns:
+        dict: 기존 렌더링 함수와 호환되는 형식
+            - summary: header를 summary 형식으로 변환
+            - solutions: steps → details, outcome → expected_outcome
+            - guidance: description → content
+            - core_message: mari_closing에서 추출
+    """
+    header = mari_story.get("header", {})
+    solutions = mari_story.get("solutions", [])
+    guidance = mari_story.get("guidance", [])
+    closing = mari_story.get("mari_closing", {})
+
+    # 1. header → summary 변환
+    normalized_summary = {
+        "core_issue": header.get("title", ""),
+        "root_cause": header.get("summary", ""),
+        "key_characteristics": []  # 마리 변환에는 없으므로 빈 배열
+    }
+
+    # 2. solutions: steps → details, outcome → expected_outcome
+    normalized_solutions = []
+    for sol in solutions:
+        normalized_solutions.append({
+            "title": sol.get("title", ""),
+            "content": sol.get("content", ""),
+            "details": sol.get("steps", []),  # steps를 details로 매핑
+            "expected_outcome": sol.get("outcome", "")  # outcome을 expected_outcome으로 매핑
+        })
+
+    # 3. guidance: description → content
+    normalized_guidance = []
+    for guide in guidance:
+        normalized_guidance.append({
+            "principle": guide.get("principle", ""),
+            "content": guide.get("description", ""),  # description을 content로 매핑
+            "action": guide.get("action", "")
+        })
+
+    # 4. core_message 추출 (core_message + final_quote 결합)
+    core_message = closing.get("core_message", "")
+    final_quote = closing.get("final_quote", "")
+
+    if core_message and final_quote:
+        combined_message = f"{core_message}\n\n{final_quote}"
+    else:
+        combined_message = core_message or final_quote
+
+    return {
+        "summary": normalized_summary,
+        "solutions": normalized_solutions,
+        "guidance": normalized_guidance,
+        "core_message": combined_message
+    }
+
+
 def extract_structured_sections(result: dict) -> dict:
-    """raw_json 기반 구조화된 결과 추출."""
+    """
+    분석 결과에서 구조화된 섹션 추출.
+    우선순위: mari_story (2차 AI) > raw_json (1차 AI) > final_text (폴백)
+    """
+    # 1순위: mari_story (2차 AI 마리 변환) - 어댑터로 정규화
+    mari_story = result.get("mari_story")
+    if mari_story:
+        normalized = normalize_mari_data_for_rendering(mari_story)
+        return {
+            **normalized,
+            "confidence": result.get("confidence_score", 0.5),
+            "has_structured": True,
+            "data_source": "mari_story"
+        }
+
+    # 2순위: raw_json (1차 AI 전문가 분석) - 폴백
     raw = result.get("raw_json") or {}
     summary = raw.get("analysis_summary") or {}
     solutions = raw.get("solutions_best_fit") or []
     guidance = raw.get("future_guidance") or []
+
+    if raw and (summary or solutions or guidance):
+        return {
+            "summary": summary,
+            "solutions": solutions,
+            "guidance": guidance,
+            "core_message": raw.get("core_message"),
+            "confidence": raw.get("confidence_score", result.get("confidence_score")),
+            "has_structured": True,
+            "data_source": "raw_json"
+        }
+
+    # 3순위: 최후 폴백
     return {
-        "summary": summary,
-        "solutions": solutions,
-        "guidance": guidance,
-        "core_message": raw.get("core_message"),
-        "confidence": raw.get("confidence_score", result.get("confidence_score")),
-        "has_structured": bool(summary and solutions and guidance),
+        "has_structured": False,
+        "final_text": result.get("final_text", ""),
+        "data_source": "final_text_fallback"
     }
 
 
@@ -684,33 +771,31 @@ def page_result():
             st.image(fixed_image, caption=f"{dog_name}의 사진", width=260)
 
     if sections["has_structured"]:
+        # 데이터 출처에 따른 경고 메시지
+        data_source = sections.get("data_source", "unknown")
+
+        if data_source == "raw_json":
+            st.warning("⚠️ 마리 변환에 실패하여 전문가 분석 결과를 표시합니다.")
+        elif data_source == "mari_story" and settings.APP_ENV == "development":
+            st.info("✅ 마리 변환 결과 (개발 모드)")
+
+        # 기존 렌더링 함수 재사용 (마리 변환 또는 전문가 분석)
         render_summary_card(sections["summary"], dog_name)
         render_core_message(sections.get("core_message"))
+
         if sections["solutions"]:
             render_solutions(sections["solutions"])
+
         if sections["guidance"]:
             render_guidance(sections["guidance"])
-
-        final_text = result.get("final_text")
-        if final_text:
-            st.markdown("### 💬 마리의 이야기")
-            render_mari_story(final_text)
     else:
-        final_text = result.get("final_text", "")
+        # 최후 폴백: 구조화되지 않은 텍스트
+        st.error("❌ 구조화된 결과 생성에 실패했습니다.")
+        final_text = sections.get("final_text", "")
         if final_text:
-            st.markdown("### 💬 마리의 이야기")
-            render_mari_story(final_text)
+            st.markdown(final_text)
         else:
-            summary = result.get("behavior_summary")
-            if summary:
-                st.markdown("### 행동 요약")
-                st.markdown(summary)
-            action_plan = result.get("action_plan", [])
-            for i, step in enumerate(action_plan, 1):
-                with st.expander(f"단계 {i}", expanded=(i == 1)):
-                    st.markdown(step)
-            if result.get("additional_notes"):
-                st.warning(f"{result['additional_notes']}")
+            st.warning("분석 결과를 표시할 수 없습니다.")
 
     st.markdown("---")
 

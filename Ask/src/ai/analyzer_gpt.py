@@ -9,7 +9,6 @@ import json
 import re
 import asyncio
 import logging
-from pathlib import Path
 from typing import Dict, Optional, List, Any
 from openai import OpenAI, APIError
 
@@ -28,6 +27,7 @@ from src.ai.schemas import (
     validate_expert_json,
 )
 from src.utils.mock_data import get_mock_result_by_problem
+from src.utils.paths import get_runtime_logs_dir
 
 
 # ===== 로깅 설정 =====
@@ -40,8 +40,7 @@ def setup_logger():
     if logger.handlers:
         logger.handlers.clear()
 
-    log_dir = Path(__file__).parent.parent.parent / "logs"
-    log_dir.mkdir(exist_ok=True)
+    log_dir = get_runtime_logs_dir()
     log_file = log_dir / "analyzer_gpt.log"
 
     file_handler = logging.FileHandler(log_file, mode='a', encoding='utf-8')

@@ -44,6 +44,8 @@ class Settings(BaseSettings):
     # Constants
     ALLOWED_IMAGE_EXTENSIONS: list[str] = [".jpg", ".jpeg", ".png", ".webp"]
     MAX_SURVEY_QUESTIONS: int = 10
+    VISION_TIMEOUT_SECONDS: float = 8.0
+    ANALYSIS_EXPECTED_SECONDS: float = 32.0
 
     class Config:
         # settings.py 파일 위치 기준으로 상위 디렉토리(Ask/)의 .env 파일 찾기

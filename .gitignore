@@ -65,6 +65,7 @@ data/uploads/
 data/temp/
 *.csv
 **/survey_results.csv
+runtime/
 
 # Temporary files
 nul

@@ -21,7 +21,9 @@ email-validator>=2.1.0      # 이메일 검증
 
 # Utilities
 python-dotenv==1.0.0        # 환경 변수 로드
-python-magic-bin==0.4.14    # 파일 타입 검증 (Windows)
+# 파일 타입 검증 - OS별로 아래 중 하나 설치:
+# Windows: pip install python-magic-bin==0.4.14
+# Linux/Mac: pip install python-magic>=0.4.27
 
 # Email Service
 sendgrid==6.11.0            # 이메일 전송 (무료 플랜: 100통/일)

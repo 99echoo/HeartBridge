@@ -13,6 +13,7 @@ from openai import OpenAI, APIError
 
 from config.settings import settings
 from src.ai.schemas import VISION_SCHEMA
+from src.utils.paths import get_runtime_logs_dir
 
 
 # ===== 로깅 설정 =====
@@ -21,9 +22,7 @@ logger = logging.getLogger("gpt4_vision")
 logger.setLevel(logging.DEBUG)
 
 if not logger.handlers:
-    from pathlib import Path
-    log_dir = Path(__file__).parent.parent.parent / "logs"
-    log_dir.mkdir(exist_ok=True)
+    log_dir = get_runtime_logs_dir()
     log_file = log_dir / "analyzer.log"
 
     file_handler = logging.FileHandler(log_file, mode='a', encoding='utf-8')

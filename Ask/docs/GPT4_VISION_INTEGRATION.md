@@ -333,7 +333,7 @@ template.format(...) 호출 시 발생
 
 모든 AI 호출은 다음 파일에 기록됩니다:
 ```
-Ask/logs/analyzer.log
+runtime/{APP_ENV}/logs/analyzer.log
 ```
 
 **로그 포맷**:
@@ -385,7 +385,7 @@ Ask/logs/analyzer.log
 ## 📞 문의 및 이슈
 
 **문제 발생 시 확인 사항**:
-1. `Ask/logs/analyzer.log` 확인
+1. `runtime/{APP_ENV}/logs/analyzer.log` 확인
 2. `.env` 파일의 `OPENAI_API_KEY` 유효성 확인
 3. OpenAI 계정 크레딧 잔액 확인
 

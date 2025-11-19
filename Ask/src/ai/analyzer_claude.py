@@ -8,7 +8,6 @@ import json
 import re
 import asyncio
 import logging
-from pathlib import Path
 from typing import Dict, Optional, List, Any
 import anthropic  # Claude API
 # from openai import OpenAI  # OpenAI API (주석 처리)
@@ -23,6 +22,7 @@ from src.ai.gpt4_vision import (
     get_fallback_vision_analysis,
 )
 from src.utils.mock_data import get_mock_result_by_problem
+from src.utils.paths import get_runtime_logs_dir
 
 
 # ===== 로깅 설정 =====
@@ -41,9 +41,8 @@ def setup_logger():
     if logger.handlers:
         logger.handlers.clear()
 
-    # 로그 파일 경로 (Ask/logs/ 디렉토리)
-    log_dir = Path(__file__).parent.parent.parent / "logs"
-    log_dir.mkdir(exist_ok=True)
+    # 로그 파일 경로
+    log_dir = get_runtime_logs_dir()
     log_file = log_dir / "analyzer.log"
 
     # 파일 핸들러 (UTF-8 인코딩)

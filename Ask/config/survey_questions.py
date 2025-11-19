@@ -53,7 +53,7 @@ BASIC_INFO_QUESTIONS: List[Dict] = [
     {
         "id": "other_pets",
         "question": "다른 반려동물과 함께 살고 있나요? (선택)",
-        "type": "checkbox_multiple",
+        "type": "checkbox_button",
         "options": [
             {"value": "dog", "label": "강아지"},
             {"value": "cat", "label": "고양이"},

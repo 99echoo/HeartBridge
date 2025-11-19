@@ -1,0 +1,557 @@
+/* 다크모드 비활성화 및 흰색 배경 고정 */
+    [data-testid="stAppViewContainer"] {
+        background-color: #ffffff !important;
+    }
+
+    [data-testid="stHeader"] {
+        background-color: #ffffff !important;
+    }
+
+    [data-testid="stSidebar"] {
+        background-color: #f5f5f5 !important;
+    }
+
+    /* 전체 앱 배경 */
+    .main {
+        background-color: #ffffff !important;
+    }
+
+    /* 상단 패딩 축소 (모바일 최적화) */
+    .block-container {
+        padding-top: 2rem !important;
+        padding-bottom: 2rem !important;
+    }
+
+    @media (max-width: 768px) {
+        .block-container {
+            padding-top: 2rem !important;
+            padding-bottom: 1rem !important;
+        }
+    }
+
+    /* 텍스트 색상 강제 */
+    .stMarkdown, p, span, div {
+        color: #333333 !important;
+    }
+
+    /* 텍스트 입력 필드 테두리 스타일 - 반응형 */
+    .stTextInput > div > div > input {
+        border: 2px solid #e0e0e0 !important;
+        border-radius: clamp(6px, 2vw, 8px) !important;
+        padding: clamp(10px, 2.5vw, 12px) !important;
+        font-size: clamp(16px, 4vw, 18px) !important;
+        background-color: #ffffff !important;
+        color: #333333 !important;
+    }
+
+    /* 포커스 시 테두리 색상 */
+    .stTextInput > div > div > input:focus {
+        border-color: #1f77b4 !important;
+        box-shadow: 0 0 0 1px #1f77b4 !important;
+    }
+
+    /* placeholder 스타일 */
+    .stTextInput > div > div > input::placeholder {
+        color: #a0a0a0 !important;
+        font-style: italic !important;
+    }
+
+    /* 랜딩 페이지 스타일 - 반응형 */
+    .landing-title {
+        font-size: clamp(32px, 8vw, 56px) !important;
+        font-weight: bold !important;
+        color: #E8826B !important;
+        text-align: center !important;
+        margin-top: clamp(20px, 5vw, 40px) !important;
+        margin-bottom: clamp(10px, 3vw, 25px) !important;
+    }
+
+    .landing-subtitle {
+        font-size: clamp(14px, 4vw, 18px) !important;
+        font-weight: bold !important;
+        color: #333333 !important;
+        text-align: center !important;
+        line-height: 1.6 !important;
+        margin-bottom: clamp(5px, 1.5vw, 10px) !important;
+    }
+
+    .landing-description {
+        font-size: clamp(13px, 3.5vw, 16px) !important;
+        font-weight: bold !important;
+        color: #666666 !important;
+        text-align: center !important;
+        line-height: 1.6 !important;
+        margin-bottom: clamp(5px, 1vw, 8px) !important;
+    }
+
+    /* 랜딩 페이지 이미지 여백 축소 */
+    .landing-page .stImage {
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+    }
+
+    /* 랜딩 페이지 버튼 컨테이너 여백 축소 */
+    .landing-page .nav-button-container {
+        margin-top: clamp(5px, 1vw, 10px) !important;
+    }
+
+    /* 랜딩 페이지 모바일 최적화 */
+    @media (max-width: 768px) {
+        .landing-title {
+            margin-top: 0 !important;
+            margin-bottom: 8px !important;
+        }
+        .landing-subtitle {
+            line-height: 1.5 !important;
+            margin-bottom: 5px !important;
+        }
+        .landing-description {
+            line-height: 1.5 !important;
+            margin-bottom: 5px !important;
+        }
+    }
+
+    /* 버튼 스타일 - 산호색 (질문 답변용) - 반응형 */
+    .stButton > button {
+        background-color: #E8826B !important;
+        color: #333333 !important;
+        border: none !important;
+        border-radius: clamp(15px, 4vw, 25px) !important;
+        padding: clamp(12px, 3vw, 15px) clamp(20px, 5vw, 30px) !important;
+        font-size: clamp(14px, 4vw, 18px) !important;
+        font-weight: bold !important;
+        transition: all 0.3s ease !important;
+    }
+
+    .stButton > button p {
+        color: #333333 !important;
+        font-weight: bold !important;
+    }
+
+    .stButton > button:hover {
+        background-color: #D67159 !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 12px rgba(232, 130, 107, 0.3) !important;
+    }
+
+    /* Primary 버튼 (선택된 질문 답변) - 흰색 텍스트 */
+    .stButton > button[kind="primary"] {
+        color: #ffffff !important;
+    }
+
+    .stButton > button[kind="primary"] p {
+        color: #ffffff !important;
+    }
+
+    /* Secondary 버튼 (선택 안 된 질문 답변) - 검정색 텍스트 */
+    .stButton > button[kind="secondary"] {
+        background-color: #f5f5f5 !important;
+        color: #333333 !important;
+        border: 2px solid #e0e0e0 !important;
+        font-weight: bold !important;
+    }
+
+    .stButton > button[kind="secondary"]:hover {
+        background-color: #FFEAE6 !important;
+        border-color: #E8826B !important;
+        color: #E8826B !important;
+    }
+
+    .stButton > button[kind="secondary"] p {
+        color: #333333 !important;
+    }
+
+    /* 네비게이션 버튼 스타일 - Key 기반 (수정됨) */
+    .st-key-nav_start button,
+    .st-key-nav_prev button,
+    .st-key-nav_next button,
+    .st-key-nav_restart button {
+        background-color: #E8826B !important;
+        color: #ffffff !important;
+        border: none !important;
+        border-radius: clamp(6px, 2vw, 8px) !important;
+        padding: clamp(10px, 2.5vw, 12px) clamp(16px, 4vw, 24px) !important;
+        font-size: clamp(14px, 3.5vw, 16px) !important;
+        font-weight: bold !important;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+        transition: all 0.3s ease !important;
+    }
+
+    .st-key-nav_start button:hover,
+    .st-key-nav_prev button:hover,
+    .st-key-nav_next button:hover,
+    .st-key-nav_restart button:hover {
+        background-color: #D67159 !important;
+        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15) !important;
+        transform: translateY(-2px) !important;
+    }
+
+    .st-key-nav_start button p,
+    .st-key-nav_prev button p,
+    .st-key-nav_next button p,
+    .st-key-nav_restart button p {
+        color: #ffffff !important;
+        font-weight: bold !important;
+    }
+
+    /* 이미지 중앙 정렬 및 반응형 크기 */
+    .stImage {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+    }
+
+    .stImage > img {
+        display: block !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        max-width: 100% !important;
+        height: auto !important;
+    }
+
+    /* 모바일/태블릿 이미지 최대 크기 제한 제거 (width 파라미터 사용) */
+
+    /* 섹션 제목 반응형 */
+    h1, .stMarkdown h1 {
+        font-size: clamp(24px, 6vw, 32px) !important;
+    }
+
+    h2, .stMarkdown h2 {
+        font-size: clamp(20px, 5vw, 28px) !important;
+        margin-top: clamp(15px, 4vw, 30px) !important;
+    }
+
+    h3, .stMarkdown h3 {
+        font-size: clamp(16px, 4vw, 20px) !important;
+    }
+
+    /* 일반 텍스트 반응형 */
+    p, .stMarkdown p {
+        font-size: clamp(13px, 3.5vw, 16px) !important;
+    }
+
+    /* 캡션 텍스트 반응형 */
+    .stMarkdown small, .stCaption {
+        font-size: clamp(11px, 3vw, 14px) !important;
+    }
+
+    /* 구분선(hr) 마진 축소 - 질문 사이 간격 줄이기 */
+    hr {
+        margin: 8px 0 !important;
+        border: none !important;
+        border-bottom: 1px solid #e0e0e0 !important;
+    }
+
+    /* Selectbox 스타일 (다크모드 대응) */
+    .stSelectbox > div > div {
+        background-color: #ffffff !important;
+        color: #333333 !important;
+        border: 2px solid #e0e0e0 !important;
+        border-radius: 8px !important;
+    }
+
+    .stSelectbox label {
+        color: #333333 !important;
+        font-weight: 500 !important;
+    }
+
+    /* Selectbox 드롭다운 메뉴 */
+    .stSelectbox [data-baseweb="select"] > div {
+        background-color: #ffffff !important;
+        color: #333333 !important;
+    }
+
+    /* Selectbox 드롭다운 팝업 (listbox) */
+    [data-baseweb="popover"] {
+        background-color: #ffffff !important;
+    }
+
+    [data-baseweb="popover"] ul {
+        background-color: #ffffff !important;
+    }
+
+    /* Selectbox 옵션 항목 */
+    .stSelectbox [role="option"] {
+        background-color: #ffffff !important;
+        color: #333333 !important;
+    }
+
+    .stSelectbox [role="option"]:hover {
+        background-color: #f5f5f5 !important;
+    }
+
+    /* 드롭다운 리스트 전체 */
+    [role="listbox"] {
+        background-color: #ffffff !important;
+    }
+
+    [role="listbox"] li {
+        background-color: #ffffff !important;
+        color: #333333 !important;
+    }
+
+    [role="listbox"] li:hover {
+        background-color: #f5f5f5 !important;
+    }
+
+    /* 이미지 중앙 정렬 */
+    .stImage {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+    }
+
+    /* 페이지 제목 (h2) 중앙 정렬 - 여러 선택자 사용 */
+    h2 {
+        text-align: center !important;
+    }
+
+    .main h2 {
+        text-align: center !important;
+    }
+
+/* ---- Result Cards ---- */
+
+.result-card {
+    background: #ffffff;
+    border-radius: 22px;
+    padding: 24px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+    margin-bottom: 24px;
+    border: 1px solid #f5f1ef;
+}
+
+.result-card ul {
+    padding-left: 20px;
+}
+
+.result-card li {
+    margin-bottom: 6px;
+    color: #555555;
+}
+
+.result-card h3,
+.result-card h4 {
+    margin-bottom: 8px;
+}
+
+.emphasis-card {
+    background: linear-gradient(135deg, #FFE4DB, #FFF7F3);
+    border: none;
+}
+
+.card-eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 12px;
+    color: #d06a4f;
+    margin-bottom: 6px;
+}
+
+.card-highlight {
+    font-weight: 600;
+    font-size: 1.1em;
+    color: #c8563c;
+}
+
+.card-caption {
+    color: #555;
+}
+
+.card-badge {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: #fff6f2;
+    color: #ca5e42;
+    font-size: 12px;
+}
+
+.guidance-item {
+    border-left: 4px solid #E8826B;
+    padding: 12px 18px;
+    margin-bottom: 18px;
+    background: #fffdfb;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.guidance-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: #d2664a;
+}
+
+.guidance-action {
+    margin-top: 8px;
+    font-weight: 500;
+    color: #555;
+}
+
+.core-message-card {
+    margin: 24px auto;
+    padding: 18px;
+    border-radius: 20px;
+    background: #fef4f0;
+    border: 1px solid #ffd6c9;
+    text-align: center;
+    font-weight: 600;
+    color: #c8563c;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+.confidence-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    background: #f2faff;
+    color: #0c6ba8;
+    font-weight: 500;
+    margin-bottom: 16px;
+}
+
+.confidence-badge span {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.mari-card {
+    background: #fff7fb;
+    border: 1px solid #ffd2ec;
+}
+
+    .stMarkdown h2 {
+        text-align: center !important;
+    }
+
+    [data-testid="stMarkdown"] h2 {
+        text-align: center !important;
+    }
+
+    .main .stMarkdown h2 {
+        text-align: center !important;
+    }
+
+    /* 파일 업로더 스타일 개선 (다크모드 대응) */
+    [data-testid="stFileUploader"] {
+        background-color: #FFEAE6 !important;
+        border: 2px dashed #E8826B !important;
+        border-radius: 12px !important;
+        padding: 20px !important;
+    }
+
+    [data-testid="stFileUploader"] label {
+        color: #E8826B !important;
+        font-weight: bold !important;
+    }
+
+    /* 파일 업로더 내부 텍스트 (다크모드 대응) */
+    [data-testid="stFileUploader"] span,
+    [data-testid="stFileUploader"] p,
+    [data-testid="stFileUploader"] div {
+        color: #333333 !important;
+    }
+
+    /* 파일 업로더 드래그 영역 */
+    [data-testid="stFileUploader"] section {
+        background-color: #ffffff !important;
+        border-color: #E8826B !important;
+    }
+
+    /* 파일 업로더 버튼 */
+    [data-testid="stFileUploader"] button {
+        background-color: #E8826B !important;
+        color: #ffffff !important;
+        border-radius: 8px !important;
+    }
+
+    [data-testid="stFileUploader"] button:hover {
+        background-color: #D67159 !important;
+    }
+
+    /* 파일 업로더 아이콘 색상 */
+    [data-testid="stFileUploader"] svg {
+        fill: #E8826B !important;
+    }
+
+    /* 체크박스 스타일 (다크모드 대응) */
+    .stCheckbox {
+        background-color: transparent !important;
+    }
+
+    /* 체크박스 라벨 텍스트 - 검정색 */
+    .stCheckbox label {
+        color: #333333 !important;
+        font-weight: 500 !important;
+    }
+
+    /* 체크박스 라벨 내부 span - 검정색 */
+    .stCheckbox label span {
+        color: #333333 !important;
+    }
+
+    /* 체크박스 input 컨테이너 */
+    .stCheckbox > label > div {
+        background-color: transparent !important;
+    }
+
+    /* 체크박스 input - 내부 흰색 */
+    .stCheckbox input[type="checkbox"] {
+        background-color: #ffffff !important;
+        border: 2px solid #e0e0e0 !important;
+    }
+
+    /* 체크박스 전체 div */
+    [data-testid="stCheckbox"] {
+        background-color: transparent !important;
+    }
+
+    /* 체크박스 라벨 (data-testid 사용) - 검정색 */
+    [data-testid="stCheckbox"] label {
+        color: #333333 !important;
+    }
+
+    /* 체크박스 라벨 내부 모든 텍스트 - 검정색 */
+    [data-testid="stCheckbox"] label p,
+    [data-testid="stCheckbox"] label span,
+    [data-testid="stCheckbox"] label div {
+        color: #333333 !important;
+    }
+
+    /* 체크박스 위젯 전체 배경 */
+    [data-baseweb="checkbox"] {
+        background-color: transparent !important;
+    }
+
+    /* 체크박스 체크마크 배경 - 내부 흰색 */
+    [data-baseweb="checkbox"] > div {
+        background-color: #ffffff !important;
+        border-color: #e0e0e0 !important;
+    }
+
+    /* 체크 시 내부도 흰색 유지 */
+    [data-baseweb="checkbox"] input:checked + div {
+        background-color: #ffffff !important;
+        border-color: #e0e0e0 !important;
+    }
+
+    /* 체크박스 포커스 시 outline 제거 (산호색 테두리 제거) */
+    .stCheckbox input[type="checkbox"]:focus {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    [data-baseweb="checkbox"] input:focus + div {
+        outline: none !important;
+        box-shadow: none !important;
+    }
+
+    /* 체크박스 체크마크 색상 */
+    [data-baseweb="checkbox"] svg {
+        fill: #333333 !important;
+    }

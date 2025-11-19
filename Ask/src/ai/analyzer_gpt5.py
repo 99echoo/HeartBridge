@@ -9,8 +9,8 @@ import json
 import re
 import asyncio
 import logging
-from pathlib import Path
-from typing import Dict, Optional, List, Any
+import contextlib
+from typing import Dict, Optional, Any
 from openai import OpenAI, APIError
 
 from config.settings import settings
@@ -28,6 +28,8 @@ from src.ai.schemas import (
     validate_expert_json,
 )
 from src.utils.mock_data import get_mock_result_by_problem
+from src.utils.paths import get_runtime_logs_dir
+from src.utils.perf import PerformanceTracker
 
 
 # ===== 로깅 설정 =====
@@ -40,8 +42,7 @@ def setup_logger():
     if logger.handlers:
         logger.handlers.clear()
 
-    log_dir = Path(__file__).parent.parent.parent / "logs"
-    log_dir.mkdir(exist_ok=True)
+    log_dir = get_runtime_logs_dir()
     log_file = log_dir / "analyzer_gpt5.log"
 
     file_handler = logging.FileHandler(log_file, mode='a', encoding='utf-8')
@@ -284,158 +285,206 @@ async def analyze_two_stage(
     hardest_part = responses.get("hardest_part", "알 수 없음")
     main_concerns = responses.get("main_concerns", [])
 
-    # ===== 0단계: GPT-4o Vision 이미지 전처리 =====
-    logger.info(f"=== GPT-4o Vision 이미지 전처리 시작 (강아지: {dog_name}) ===")
+    tracker = PerformanceTracker(
+        name="analyze_two_stage",
+        metadata={"dog_name": dog_name, "app_env": settings.APP_ENV, "main_concerns": main_concerns}
+    )
+    final_status = "success"
+    vision_fallback_used = False
+    expert_mock_used = False
+    mari_template_used = False
 
-    vision_analysis = None
     try:
-        vision_analysis = await analyze_dog_image_with_gpt4(
-            image_bytes=dog_photo,
-            max_retries=2
+        # ===== 0단계: GPT-4o Vision 이미지 전처리 =====
+        logger.info(f"=== GPT-4o Vision 이미지 전처리 시작 (강아지: {dog_name}) ===")
+
+        vision_analysis = None
+        vision_task = asyncio.create_task(
+            analyze_dog_image_with_gpt4(
+                image_bytes=dog_photo,
+                max_retries=2
+            )
         )
-        logger.info("GPT-4o Vision 이미지 분석 성공!")
+        try:
+            with tracker.span("vision_analysis"):
+                vision_analysis = await asyncio.wait_for(
+                    vision_task,
+                    timeout=settings.VISION_TIMEOUT_SECONDS
+                )
+            logger.info("GPT-4o Vision 이미지 분석 성공!")
 
-    except Exception as e:
-        logger.error(f"GPT-4o Vision 실패, Fallback 사용: {str(e)}")
-        vision_analysis = get_fallback_vision_analysis(dog_name=dog_name)
+        except asyncio.TimeoutError:
+            vision_fallback_used = True
+            logger.warning("GPT-4o Vision 분석이 지연되어 Fallback으로 전환합니다.")
+            vision_task.cancel()
+            with contextlib.suppress(Exception):
+                await vision_task
+            vision_analysis = get_fallback_vision_analysis(dog_name=dog_name)
 
-    # ===== 1차 AI: 전문가 분석 (GPT-5, JSON Schema 강제) =====
-    logger.info(f"=== 1차 AI 분석 시작 (GPT-5 + JSON Schema, 강아지: {dog_name}) ===")
+        except Exception as e:
+            vision_fallback_used = True
+            logger.error(f"GPT-4o Vision 실패, Fallback 사용: {str(e)}")
+            vision_analysis = get_fallback_vision_analysis(dog_name=dog_name)
 
-    raw_json = None
-    try:
-        # 프롬프트 생성
-        logger.debug("1차 AI 프롬프트 생성 중...")
-        expert_prompt = build_expert_analysis_prompt(
-            responses=responses,
-            dog_photo=dog_photo,
-            behavior_media=behavior_media,
-            vision_analysis=vision_analysis
-        )
+        tracker.mark_event("vision_fallback", vision_fallback_used)
 
-        # GPT-5 Responses API 호출 (JSON Schema 강제)
-        logger.info("1차 AI GPT-5 API 호출 시작 (JSON Schema 강제)...")
-        raw_response = await call_gpt5_api(
-            system=expert_prompt["system"],
-            user=expert_prompt["user"],
-            max_retries=3,
-            model="gpt-5",
-            use_json_schema=True,
-            json_schema=EXPERT_ANALYSIS_SCHEMA,
-            temperature=0.4,
-            verbosity="medium",  # 중간 상세도
-            reasoning_effort="medium"  # 중간 추론 강도
-        )
+        # ===== 1차 AI: 전문가 분석 (GPT-5, JSON Schema 강제) =====
+        logger.info(f"=== 1차 AI 분석 시작 (GPT-5 + JSON Schema, 강아지: {dog_name}) ===")
 
-        # JSON 파싱
-        logger.debug("1차 AI 응답 JSON 파싱 중...")
-        raw_json = parse_json_response(raw_response)
+        raw_json = None
+        try:
+            with tracker.span("expert_analysis"):
+                # 프롬프트 생성
+                logger.debug("1차 AI 프롬프트 생성 중...")
+                expert_prompt = build_expert_analysis_prompt(
+                    responses=responses,
+                    dog_photo=dog_photo,
+                    behavior_media=behavior_media,
+                    vision_analysis=vision_analysis
+                )
 
-        # ===== Self-Healing: Schema 검증 =====
-        is_valid, error_msg = validate_expert_json(raw_json)
+                # GPT-5 Responses API 호출 (JSON Schema 강제)
+                logger.info("1차 AI GPT-5 API 호출 시작 (JSON Schema 강제)...")
+                raw_response = await call_gpt5_api(
+                    system=expert_prompt["system"],
+                    user=expert_prompt["user"],
+                    max_retries=3,
+                    model="gpt-5",
+                    use_json_schema=True,
+                    json_schema=EXPERT_ANALYSIS_SCHEMA,
+                    temperature=0.4,
+                    verbosity="medium",  # 중간 상세도
+                    reasoning_effort="medium"  # 중간 추론 강도
+                )
 
-        if not is_valid:
-            logger.warning(f"Schema 검증 실패: {error_msg}")
-            logger.info("=== Self-Healing 단계 1: Normalize 시도 ===")
+                # JSON 파싱
+                logger.debug("1차 AI 응답 JSON 파싱 중...")
+                raw_json = parse_json_response(raw_response)
 
-            # 1) Normalize (자동 보정)
-            raw_json = normalize_expert_json(raw_json)
-            logger.info("Normalize 완료")
+                # ===== Self-Healing: Schema 검증 =====
+                is_valid, error_msg = validate_expert_json(raw_json)
 
-            # 2) 재검증
-            is_valid, error_msg = validate_expert_json(raw_json)
+                if not is_valid:
+                    logger.warning(f"Schema 검증 실패: {error_msg}")
+                    logger.info("=== Self-Healing 단계 1: Normalize 시도 ===")
 
-            if not is_valid:
-                logger.warning(f"Normalize 후에도 검증 실패: {error_msg}")
-                logger.info("=== Self-Healing 단계 2: 수정 프롬프트 시도 ===")
+                    # 1) Normalize (자동 보정)
+                    raw_json = normalize_expert_json(raw_json)
+                    logger.info("Normalize 완료")
 
-                # 3) 수정 프롬프트
-                try:
-                    raw_json = await fix_json_with_prompt(
-                        broken_json=raw_json,
-                        error_message=error_msg,
-                        original_prompt=expert_prompt["user"]
-                    )
-
-                    # 4) 최종 검증
+                    # 2) 재검증
                     is_valid, error_msg = validate_expert_json(raw_json)
 
                     if not is_valid:
-                        logger.error(f"수정 프롬프트 후에도 검증 실패: {error_msg}")
-                        logger.warning("최종 Normalize 적용")
-                        raw_json = normalize_expert_json(raw_json)
+                        logger.warning(f"Normalize 후에도 검증 실패: {error_msg}")
+                        logger.info("=== Self-Healing 단계 2: 수정 프롬프트 시도 ===")
 
-                except Exception as fix_error:
-                    logger.error(f"수정 프롬프트 실패: {str(fix_error)}")
-                    logger.warning("Normalize로 복구")
-                    raw_json = normalize_expert_json(raw_json)
+                        # 3) 수정 프롬프트
+                        try:
+                            raw_json = await fix_json_with_prompt(
+                                broken_json=raw_json,
+                                error_message=error_msg,
+                                original_prompt=expert_prompt["user"]
+                            )
 
-        logger.info("1차 AI 분석 및 검증 완료!")
+                            # 4) 최종 검증
+                            is_valid, error_msg = validate_expert_json(raw_json)
 
-    except Exception as e:
-        # 최후 폴백: Mock 데이터
-        logger.error(f"===== 1차 AI 실패 - Mock 데이터 폴백 =====")
-        logger.error(f"Error: {str(e)}", exc_info=True)
+                            if not is_valid:
+                                logger.error(f"수정 프롬프트 후에도 검증 실패: {error_msg}")
+                                logger.warning("최종 Normalize 적용")
+                                raw_json = normalize_expert_json(raw_json)
 
-        problem_type = main_concerns[0] if main_concerns else "barking"
-        mock_result = get_mock_result_by_problem(problem_type)
+                        except Exception as fix_error:
+                            logger.error(f"수정 프롬프트 실패: {str(fix_error)}")
+                            logger.warning("Normalize로 복구")
+                            raw_json = normalize_expert_json(raw_json)
 
-        raw_json = {
-            "analysis_summary": {
-                "core_issue": "분석 실패로 인한 기본 응답",
-                "root_cause": "API 오류",
-                "key_characteristics": ["정보 부족", "임시 응답", "재시도 권장"]
-            },
-            "solutions_best_fit": [
-                {"title": "솔루션 1", "content": "기본 솔루션", "details": ["임시 응답"], "expected_outcome": "개선 기대"},
-                {"title": "솔루션 2", "content": "기본 솔루션", "details": ["임시 응답"], "expected_outcome": "개선 기대"},
-                {"title": "솔루션 3", "content": "기본 솔루션", "details": ["임시 응답"], "expected_outcome": "개선 기대"}
-            ],
-            "future_guidance": [
-                {"principle": "원칙 1", "content": "내용", "action": "행동"},
-                {"principle": "원칙 2", "content": "내용", "action": "행동"},
-                {"principle": "원칙 3", "content": "내용", "action": "행동"}
-            ],
-            "core_message": "일시적인 오류가 발생했습니다. 다시 시도해주세요.",
-            "confidence_score": 0.3
+            logger.info("1차 AI 분석 및 검증 완료!")
+
+        except Exception as e:
+            expert_mock_used = True
+            # 최후 폴백: Mock 데이터
+            logger.error("===== 1차 AI 실패 - Mock 데이터 폴백 =====")
+            logger.error(f"Error: {str(e)}", exc_info=True)
+
+            problem_type = main_concerns[0] if main_concerns else "barking"
+            mock_result = get_mock_result_by_problem(problem_type)
+
+            raw_json = {
+                "analysis_summary": {
+                    "core_issue": "분석 실패로 인한 기본 응답",
+                    "root_cause": "API 오류",
+                    "key_characteristics": ["정보 부족", "임시 응답", "재시도 권장"]
+                },
+                "solutions_best_fit": [
+                    {"title": "솔루션 1", "content": "기본 솔루션", "details": ["임시 응답"], "expected_outcome": "개선 기대"},
+                    {"title": "솔루션 2", "content": "기본 솔루션", "details": ["임시 응답"], "expected_outcome": "개선 기대"},
+                    {"title": "솔루션 3", "content": "기본 솔루션", "details": ["임시 응답"], "expected_outcome": "개선 기대"}
+                ],
+                "future_guidance": [
+                    {"principle": "원칙 1", "content": "내용", "action": "행동"},
+                    {"principle": "원칙 2", "content": "내용", "action": "행동"},
+                    {"principle": "원칙 3", "content": "내용", "action": "행동"}
+                ],
+                "core_message": "일시적인 오류가 발생했습니다. 다시 시도해주세요.",
+                "confidence_score": 0.3
+            }
+
+        tracker.mark_event("expert_mock_fallback", expert_mock_used)
+
+        # ===== 2차 AI: 마리 페르소나 변환 (GPT-5, 자연어) =====
+        logger.info(f"=== 2차 AI 변환 시작 (GPT-5, 강아지: {dog_name}) ===")
+
+        try:
+            with tracker.span("mari_conversion"):
+                mari_prompt = build_mari_conversion_prompt(
+                    raw_json=raw_json,
+                    dog_name=dog_name,
+                    dog_age=dog_age,
+                    hardest_part=hardest_part
+                )
+
+                # GPT-5 Responses API 호출 (텍스트 모드)
+                logger.info("2차 AI GPT-5 API 호출 시작 (텍스트 모드)...")
+                final_text = await call_gpt5_api(
+                    system=mari_prompt["system"],
+                    user=mari_prompt["user"],
+                    max_retries=2,
+                    model="gpt-5",
+                    use_json_schema=False,
+                    temperature=0.7,
+                    verbosity="high",  # 높은 상세도 (친절한 톤)
+                    reasoning_effort="minimal"  # 최소 추론 (빠른 응답)
+                )
+                logger.info("2차 AI 변환 성공!")
+
+        except Exception as e:
+            mari_template_used = True
+            logger.error("===== 2차 AI 실패 - simple_template_conversion 폴백 =====")
+            logger.error(f"Error: {str(e)}", exc_info=True)
+            final_text = simple_template_conversion(raw_json, dog_name, dog_age)
+
+        tracker.mark_event("mari_template_fallback", mari_template_used)
+
+        # 결과 반환
+        return {
+            "final_text": final_text,
+            "confidence_score": raw_json.get("confidence_score", 0.5),
+            "raw_json": raw_json
         }
 
-    # ===== 2차 AI: 마리 페르소나 변환 (GPT-5, 자연어) =====
-    logger.info(f"=== 2차 AI 변환 시작 (GPT-5, 강아지: {dog_name}) ===")
-
-    try:
-        mari_prompt = build_mari_conversion_prompt(
-            raw_json=raw_json,
-            dog_name=dog_name,
-            dog_age=dog_age,
-            hardest_part=hardest_part
+    except Exception as unexpected:
+        final_status = "error"
+        tracker.set_status("error", str(unexpected))
+        raise
+    finally:
+        tracker.add_metadata(
+            used_mock_result=expert_mock_used,
+            mari_template_fallback=mari_template_used,
+            vision_fallback_used=vision_fallback_used,
         )
-
-        # GPT-5 Responses API 호출 (텍스트 모드)
-        logger.info("2차 AI GPT-5 API 호출 시작 (텍스트 모드)...")
-        final_text = await call_gpt5_api(
-            system=mari_prompt["system"],
-            user=mari_prompt["user"],
-            max_retries=2,
-            model="gpt-5",
-            use_json_schema=False,
-            temperature=0.7,
-            verbosity="high",  # 높은 상세도 (친절한 톤)
-            reasoning_effort="minimal"  # 최소 추론 (빠른 응답)
-        )
-        logger.info("2차 AI 변환 성공!")
-
-    except Exception as e:
-        logger.error(f"===== 2차 AI 실패 - simple_template_conversion 폴백 =====")
-        logger.error(f"Error: {str(e)}", exc_info=True)
-        final_text = simple_template_conversion(raw_json, dog_name, dog_age)
-
-    # 결과 반환
-    return {
-        "final_text": final_text,
-        "confidence_score": raw_json.get("confidence_score", 0.5),
-        "raw_json": raw_json
-    }
+        tracker.finish(final_status)
 
 
 # ===== 폴백: 간단한 템플릿 변환 =====

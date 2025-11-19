@@ -114,6 +114,12 @@ streamlit run app.py
 # 브라우저에서 자동으로 http://localhost:8501 열림
 ```
 
+### 4. 런타임 산출물 위치
+- 모든 CSV/로그 파일은 `runtime/{APP_ENV}/` 하위에 생성됩니다.
+- `runtime/{APP_ENV}/data/` : 설문 CSV 등의 사용자 데이터
+- `runtime/{APP_ENV}/logs/` : Vision/GPT 분석 로그, 성능 계측(`performance.log`)
+- `.gitignore`에 포함되어 있어 로컬 개발 산출물이 레포에 섞이지 않습니다.
+
 ---
 
 ## 사용자 플로우

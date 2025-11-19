@@ -10,6 +10,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Optional
 
+from src.utils.paths import get_csv_output_path
+
 
 def save_to_csv(
     responses: Dict[str, Any],
@@ -22,7 +24,7 @@ def save_to_csv(
     Args:
         responses: 설문 응답 딕셔너리 (st.session_state.responses)
         analysis_result: AI 분석 결과 딕셔너리 (st.session_state.analysis_result)
-        csv_path: CSV 파일 경로 (기본값: 프로젝트 루트/survey_results.csv)
+        csv_path: CSV 파일 경로 (기본값: runtime/{APP_ENV}/data/survey_results.csv)
 
     Returns:
         str: 저장된 CSV 파일 경로
@@ -32,9 +34,7 @@ def save_to_csv(
     """
     # CSV 파일 경로 설정
     if csv_path is None:
-        # Ask 프로젝트 루트 디렉토리 (상위 디렉토리)
-        project_root = Path(__file__).parent.parent.parent
-        csv_path = project_root / "survey_results.csv"
+        csv_path = get_csv_output_path()
     else:
         csv_path = Path(csv_path)
 
@@ -119,5 +119,4 @@ def get_csv_path() -> Path:
     Returns:
         Path: CSV 파일 경로
     """
-    project_root = Path(__file__).parent.parent.parent
-    return project_root / "survey_results.csv"
+    return get_csv_output_path()

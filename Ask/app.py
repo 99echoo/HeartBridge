@@ -820,6 +820,14 @@ def page_result():
             st.session_state.analysis_result = None
             st.rerun()
 
+    # 하단 패딩 추가 (모바일 환경 대응)
+    st.markdown(
+        """
+        <div style="height: 80px;"></div>
+        """,
+        unsafe_allow_html=True,
+    )
+
 
 # ===== 메인 앱 =====
 def main():

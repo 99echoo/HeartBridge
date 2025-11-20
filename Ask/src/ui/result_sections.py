@@ -18,8 +18,6 @@ def render_summary_card(summary: Dict[str, str], dog_name: str) -> None:
     st.markdown(
         f"""
         <div class="result-card emphasis-card">
-            <p class="card-eyebrow">핵심 진단</p>
-            <h3>{dog_name}에게 가장 중요한 한 가지</h3>
             <p class="card-highlight">{core_issue}</p>
             <p class="card-caption">{root_cause}</p>
             <ul>
@@ -33,8 +31,8 @@ def render_summary_card(summary: Dict[str, str], dog_name: str) -> None:
 
 def render_solutions(solutions: List[Dict[str, str]]) -> None:
     """맞춤 솔루션 카드 리스트 (세로)."""
-    st.markdown("### 🧩 맞춤 솔루션 3가지")
-    for idx, sol in enumerate(solutions, start=1):
+    st.markdown("### 🧩 맞춤 솔루션 2가지")
+    for idx, sol in enumerate(solutions[:2], start=1):
         st.markdown(
             f"""
             <div class="result-card solution-card">
@@ -70,6 +68,7 @@ def render_guidance(guidance: List[Dict[str, str]]) -> None:
 def render_core_message(message: str | None) -> None:
     if not message:
         return
+    st.markdown("### 💛 마리의 한마디")
     st.markdown(
         f"""
         <div class="core-message-card">
@@ -83,11 +82,19 @@ def render_core_message(message: str | None) -> None:
 def render_confidence_badge(score: float | None) -> None:
     if score is None:
         return
-    pct = int(score * 100)
+
+    # 점수 구간별 텍스트 변환
+    if score >= 0.8:
+        level_text = "높음"
+    elif score >= 0.6:
+        level_text = "중간"
+    else:
+        level_text = "낮음"
+
     st.markdown(
         f"""
         <div class="confidence-badge">
-            신뢰도 <span>{pct}%</span>
+            신뢰도 <span>{level_text}</span>
         </div>
         """,
         unsafe_allow_html=True,

@@ -338,8 +338,8 @@
 }
 
 .emphasis-card {
-    background: linear-gradient(135deg, #FFE4DB, #FFF7F3);
-    border: none;
+    background: #ffffff;
+    border: 1px solid #f5f1ef;
 }
 
 .card-eyebrow {
@@ -395,11 +395,11 @@
     margin: 24px auto;
     padding: 18px;
     border-radius: 20px;
-    background: #fef4f0;
-    border: 1px solid #ffd6c9;
+    background: #ffffff;
+    border: 1px solid #f5f1ef;
     text-align: center;
     font-weight: 600;
-    color: #c8563c;
+    color: #555555;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
 }
 

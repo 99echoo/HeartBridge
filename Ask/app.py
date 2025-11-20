@@ -692,7 +692,10 @@ def page_result():
     scroll_to_top()
 
     dog_name = st.session_state.responses.get("dog_name", "강아지")
-    st.title(f"{dog_name}의 행동 분석이 완료되었어요!")
+    st.markdown(
+        f"<h1 style='text-align: center;'>{dog_name}의 행동 분석이 완료되었어요!</h1>",
+        unsafe_allow_html=True
+    )
 
     result = st.session_state.analysis_result
 
@@ -742,21 +745,38 @@ def page_result():
     st.markdown("---")
 
     st.markdown("### 📤 결과 공유")
+
+    # 링크 복사용 JavaScript
+    landing_url = "http://localhost:8504/"
+    st.components.v1.html(
+        f"""
+        <script>
+        function copyToClipboard() {{
+            navigator.clipboard.writeText('{landing_url}').then(function() {{
+                // 성공 시 아무것도 하지 않음 (Streamlit toast가 처리)
+            }}, function(err) {{
+                console.error('클립보드 복사 실패:', err);
+            }});
+        }}
+        </script>
+        """,
+        height=0,
+    )
+
     col1, col2 = st.columns(2)
     with col1:
-        if st.button("🔗 링크 복사", use_container_width=True):
-            st.session_state.show_link = True
+        if st.button("🔗 링크 복사", use_container_width=True, key="copy_link"):
+            st.toast("✅ 링크가 클립보드에 복사되었습니다!", icon="✅")
+            st.markdown(
+                """
+                <script>
+                navigator.clipboard.writeText('http://localhost:8504/');
+                </script>
+                """,
+                unsafe_allow_html=True
+            )
     with col2:
         st.button("📋 만족도 조사", use_container_width=True, disabled=True)
-
-    # 링크 복사 버튼 클릭 시 URL 표시
-    if st.session_state.get("show_link", False):
-        landing_url = "http://localhost:8504/"
-        st.info("아래 링크를 복사하세요:")
-        st.code(landing_url, language=None)
-        if st.button("닫기"):
-            st.session_state.show_link = False
-            st.rerun()
 
     st.markdown("---")
 

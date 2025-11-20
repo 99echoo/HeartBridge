@@ -102,7 +102,7 @@ EXPERT_ANALYSIS_SCHEMA: Dict[str, Any] = {
                 "description": "정확히 3개의 맞춤 솔루션",
                 "items": {
                     "type": "object",
-                    "required": ["title", "content", "details", "expected_outcome"],
+                    "required": ["title", "content", "details"],
                     "properties": {
                         "title": {
                             "type": "string",
@@ -123,7 +123,7 @@ EXPERT_ANALYSIS_SCHEMA: Dict[str, Any] = {
                         },
                         "expected_outcome": {
                             "type": "string",
-                            "description": "기대 효과",
+                            "description": "기대 효과 (optional)",
                             "maxLength": 200
                         }
                     },
@@ -137,7 +137,7 @@ EXPERT_ANALYSIS_SCHEMA: Dict[str, Any] = {
                 "description": "정확히 3개의 미래 가이던스",
                 "items": {
                     "type": "object",
-                    "required": ["principle", "content", "action"],
+                    "required": ["principle", "content"],
                     "properties": {
                         "principle": {
                             "type": "string",
@@ -151,7 +151,7 @@ EXPERT_ANALYSIS_SCHEMA: Dict[str, Any] = {
                         },
                         "action": {
                             "type": "string",
-                            "description": "구체적 행동",
+                            "description": "구체적 행동 (optional)",
                             "maxLength": 400
                         }
                     },
@@ -196,7 +196,7 @@ MARI_NARRATIVE_SCHEMA: Dict[str, Any] = {
                 "type": "array",
                 "items": {
                     "type": "object",
-                    "required": ["title", "content", "steps", "outcome"],
+                    "required": ["title", "content", "steps"],
                     "properties": {
                         "title": {"type": "string", "maxLength": 80},
                         "content": {"type": "string", "maxLength": 500},
@@ -206,7 +206,7 @@ MARI_NARRATIVE_SCHEMA: Dict[str, Any] = {
                             "minItems": 2,
                             "maxItems": 4,
                         },
-                        "outcome": {"type": "string", "maxLength": 200},
+                        "outcome": {"type": "string", "maxLength": 200, "description": "기대 효과 (optional)"},
                     },
                     "additionalProperties": False,
                 },
@@ -217,11 +217,11 @@ MARI_NARRATIVE_SCHEMA: Dict[str, Any] = {
                 "type": "array",
                 "items": {
                     "type": "object",
-                    "required": ["principle", "description", "action"],
+                    "required": ["principle", "description"],
                     "properties": {
                         "principle": {"type": "string", "maxLength": 80},
                         "description": {"type": "string", "maxLength": 400},
-                        "action": {"type": "string", "maxLength": 400},
+                        "action": {"type": "string", "maxLength": 400, "description": "구체적 행동 (optional)"},
                     },
                     "additionalProperties": False,
                 },
@@ -230,10 +230,10 @@ MARI_NARRATIVE_SCHEMA: Dict[str, Any] = {
             },
             "mari_closing": {
                 "type": "object",
-                "required": ["core_message", "final_quote"],
+                "required": ["core_message"],
                 "properties": {
                     "core_message": {"type": "string", "maxLength": 300},
-                    "final_quote": {"type": "string", "maxLength": 200},
+                    "final_quote": {"type": "string", "maxLength": 200, "description": "최종 인용구 (optional)"},
                 },
                 "additionalProperties": False,
             },

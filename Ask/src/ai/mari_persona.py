@@ -56,16 +56,14 @@ EXPERT_PERSONA = """당신은 반려견 행동 전문 훈련사입니다.
         {
             "title": "솔루션 제목",
             "content": "핵심 설명",
-            "details": ["상세 방법 1", "상세 방법 2", "상세 방법 3"],
-            "expected_outcome": "기대 효과"
+            "details": ["상세 방법 1", "상세 방법 2", "상세 방법 3"]
         }
         // 총 3개 고정
     ],
     "future_guidance": [
         {
             "principle": "핵심 원칙",
-            "content": "설명",
-            "action": "구체적 행동"
+            "content": "설명"
         }
         // 총 3개 고정
     ],
@@ -163,8 +161,6 @@ MARI_CONVERSION_TEMPLATE = """아래 전문가 분석 결과를 마리의 따뜻
 
 [details를 구체적으로 설명 2-3문장]
 
-[expected_outcome을 격려와 함께]
-
 ##Example:
 
 1️⃣ **거리두기 연습부터 시작해요.**
@@ -195,13 +191,14 @@ MARI_CONVERSION_TEMPLATE = """아래 전문가 분석 결과를 마리의 따뜻
 
 🐾 **앞으로 이렇게 해보세요!**
 
-[future_guidance 3개를 2-3문장으로 요약]
+[future_guidance 3개를 principle과 content로 구성하여 2-3문장으로 요약]
 
 **{dog_name}는 잘하고 있어요. 보호자님도 너무 잘하고 계세요 💛**
 
 ---
 
 IMPORTANT: 위 형식을 정확히 따르되, 마리의 따뜻하고 친근한 톤을 유지하세요.
+expected_outcome, action, final_quote는 생성하지 마세요.
 """
 
 

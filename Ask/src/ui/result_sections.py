@@ -11,14 +11,12 @@ import streamlit as st
 
 def render_summary_card(summary: Dict[str, str], dog_name: str) -> None:
     """핵심 진단 카드."""
-    core_issue = summary.get("core_issue", "핵심 이슈 정보가 부족해요.")
     root_cause = summary.get("root_cause", "")
     characteristics = summary.get("key_characteristics", [])
 
     st.markdown(
         f"""
         <div class="result-card emphasis-card">
-            <p class="card-highlight">{core_issue}</p>
             <p class="card-caption">{root_cause}</p>
             <ul>
                 {''.join(f'<li>{item}</li>' for item in characteristics)}
@@ -42,7 +40,6 @@ def render_solutions(solutions: List[Dict[str, str]]) -> None:
                 <ul>
                     {''.join(f'<li>{detail}</li>' for detail in sol.get('details', []))}
                 </ul>
-                <div class="card-badge">{sol.get('expected_outcome', '')}</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -58,7 +55,6 @@ def render_guidance(guidance: List[Dict[str, str]]) -> None:
             <div class="guidance-item">
                 <div class="guidance-title">{guide.get('principle', '')}</div>
                 <p>{guide.get('content', '')}</p>
-                <div class="guidance-action">➡ {guide.get('action', '')}</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -83,17 +79,20 @@ def render_confidence_badge(score: float | None) -> None:
     if score is None:
         return
 
-    # 점수 구간별 텍스트 변환
+    # 점수 구간별 텍스트 및 색상 설정
     if score >= 0.8:
         level_text = "높음"
+        color = "#4CAF50"  # 초록색
     elif score >= 0.6:
         level_text = "중간"
+        color = "#FF9800"  # 오렌지색
     else:
         level_text = "낮음"
+        color = "#757575"  # 회색
 
     st.markdown(
         f"""
-        <div class="confidence-badge">
+        <div class="confidence-badge" style="background-color: {color};">
             신뢰도 <span>{level_text}</span>
         </div>
         """,

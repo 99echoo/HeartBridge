@@ -635,20 +635,14 @@ def normalize_mari_data_for_rendering(mari_story: dict) -> dict:
             "action": guide.get("action", "")
         })
 
-    # 4. core_message 추출 (core_message + final_quote 결합)
+    # 4. core_message 추출 (final_quote는 제외)
     core_message = closing.get("core_message", "")
-    final_quote = closing.get("final_quote", "")
-
-    if core_message and final_quote:
-        combined_message = f"{core_message}\n\n{final_quote}"
-    else:
-        combined_message = core_message or final_quote
 
     return {
         "summary": normalized_summary,
         "solutions": normalized_solutions,
         "guidance": normalized_guidance,
-        "core_message": combined_message
+        "core_message": core_message
     }
 
 
@@ -697,10 +691,10 @@ def extract_structured_sections(result: dict) -> dict:
 def page_result():
     scroll_to_top()
 
-    st.title("분석 결과")
+    dog_name = st.session_state.responses.get("dog_name", "강아지")
+    st.title(f"{dog_name}의 행동 분석이 완료되었어요!")
 
     result = st.session_state.analysis_result
-    dog_name = st.session_state.responses.get("dog_name", "강아지")
 
     if not result:
         st.info("아직 분석 결과가 준비되지 않았어요.")
@@ -708,16 +702,6 @@ def page_result():
 
     sections = extract_structured_sections(result)
 
-    st.markdown(
-        f"""
-        <div style='text-align: center; margin-bottom: 14px;'>
-            <p style='color: #333333; font-size: clamp(16px, 4vw, 20px); font-weight: bold; margin: 0;'>
-                {dog_name}의 행동 분석이 완료되었어요!
-            </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
     render_confidence_badge(sections["confidence"])
 
     dog_photo = st.session_state.get("dog_photo")

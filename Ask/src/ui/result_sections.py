@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from typing import Dict, List
+import html
 
 import streamlit as st
 
@@ -14,12 +15,16 @@ def render_summary_card(summary: Dict[str, str], dog_name: str) -> None:
     root_cause = summary.get("root_cause", "")
     characteristics = summary.get("key_characteristics", [])
 
+    # HTML 태그 이스케이프 처리
+    root_cause_escaped = html.escape(root_cause)
+    characteristics_escaped = [html.escape(str(item)) for item in characteristics]
+
     st.markdown(
         f"""
         <div class="result-card emphasis-card">
-            <p class="card-caption">{root_cause}</p>
+            <p class="card-caption">{root_cause_escaped}</p>
             <ul>
-                {''.join(f'<li>{item}</li>' for item in characteristics)}
+                {''.join(f'<li>{item}</li>' for item in characteristics_escaped)}
             </ul>
         </div>
         """,
@@ -31,13 +36,18 @@ def render_solutions(solutions: List[Dict[str, str]]) -> None:
     """맞춤 솔루션 카드 리스트 (세로)."""
     st.markdown("### 🧩 맞춤 솔루션 2가지")
     for idx, sol in enumerate(solutions[:2], start=1):
+        # HTML 태그 이스케이프 처리
+        title = html.escape(sol.get('title', '솔루션'))
+        content = html.escape(sol.get('content', ''))
+        details = [html.escape(str(d)) for d in sol.get('details', [])]
+
         st.markdown(
             f"""
             <div class="result-card solution-card">
-                <h4>{sol.get('title', '솔루션')}</h4>
-                <p>{sol.get('content', '')}</p>
+                <h4>{title}</h4>
+                <p>{content}</p>
                 <ul>
-                    {''.join(f'<li>{detail}</li>' for detail in sol.get('details', []))}
+                    {''.join(f'<li>{detail}</li>' for detail in details)}
                 </ul>
             </div>
             """,
@@ -49,11 +59,15 @@ def render_guidance(guidance: List[Dict[str, str]]) -> None:
     """앞으로의 가이드 섹션."""
     st.markdown("### 🌱 앞으로 이렇게 해보세요")
     for guide in guidance:
+        # HTML 태그 이스케이프 처리
+        principle = html.escape(guide.get('principle', ''))
+        content = html.escape(guide.get('content', ''))
+
         st.markdown(
             f"""
             <div class="guidance-item">
-                <div class="guidance-title">{guide.get('principle', '')}</div>
-                <p>{guide.get('content', '')}</p>
+                <div class="guidance-title">{principle}</div>
+                <p>{content}</p>
             </div>
             """,
             unsafe_allow_html=True,
@@ -64,10 +78,12 @@ def render_core_message(message: str | None) -> None:
     if not message:
         return
     st.markdown("### 💛 마리의 한마디")
+    # HTML 태그 이스케이프 처리
+    message_escaped = html.escape(message)
     st.markdown(
         f"""
         <div class="core-message-card">
-            <p>{message}</p>
+            <p>{message_escaped}</p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -104,10 +120,12 @@ def render_mari_story(story: dict | str | None) -> None:
         return
 
     if isinstance(story, str):
+        # HTML 태그 이스케이프 처리
+        story_escaped = html.escape(story)
         st.markdown(
             f"""
             <div class="result-card mari-card">
-                {story}
+                {story_escaped}
             </div>
             """,
             unsafe_allow_html=True,
@@ -116,13 +134,20 @@ def render_mari_story(story: dict | str | None) -> None:
 
     header = story.get("header", {})
     closing = story.get("mari_closing", {})
+
+    # HTML 태그 이스케이프 처리
+    title = html.escape(header.get('title', '마리의 이야기'))
+    summary = html.escape(header.get('summary', ''))
+    core_message = html.escape(closing.get('core_message', ''))
+    final_quote = html.escape(closing.get('final_quote', ''))
+
     st.markdown(
         f"""
         <div class="result-card mari-card">
-            <h4>{header.get('title', '마리의 이야기')}</h4>
-            <p>{header.get('summary', '')}</p>
-            <div class="mari-core-message">{closing.get('core_message', '')}</div>
-            <div class="mari-final-quote">{closing.get('final_quote', '')}</div>
+            <h4>{title}</h4>
+            <p>{summary}</p>
+            <div class="mari-core-message">{core_message}</div>
+            <div class="mari-final-quote">{final_quote}</div>
         </div>
         """,
         unsafe_allow_html=True,

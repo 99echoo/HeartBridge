@@ -316,10 +316,10 @@
 
 .result-card {
     background: #ffffff;
-    border-radius: 22px;
-    padding: 24px;
+    border-radius: clamp(16px, 4vw, 22px);
+    padding: clamp(16px, 4vw, 24px);
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
-    margin-bottom: 24px;
+    margin-bottom: clamp(16px, 4vw, 24px);
     border: 1px solid #f5f1ef;
 }
 
@@ -371,11 +371,11 @@
 }
 
 .guidance-item {
-    border-left: 4px solid #E8826B;
-    padding: 12px 18px;
-    margin-bottom: 18px;
+    border-left: clamp(3px, 1vw, 4px) solid #E8826B;
+    padding: clamp(12px, 3vw, 18px);
+    margin-bottom: clamp(12px, 3vw, 18px);
     background: #fffdfb;
-    border-radius: 12px;
+    border-radius: clamp(8px, 2vw, 12px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
 }
 
@@ -392,8 +392,8 @@
 }
 
 .core-message-card {
-    margin: 24px auto;
-    padding: 18px;
+    margin: clamp(16px, 4vw, 24px) auto;
+    padding: clamp(14px, 3.5vw, 18px);
     border-radius: 20px;
     background: #ffffff;
     border: 1px solid #f5f1ef;
@@ -407,12 +407,12 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 16px;
+    padding: clamp(6px, 1.5vw, 8px) clamp(12px, 3vw, 16px);
     border-radius: 999px;
     background: #f2faff;
     color: #0c6ba8;
     font-weight: 500;
-    margin-bottom: 16px;
+    margin-bottom: clamp(12px, 3vw, 16px);
 }
 
 .confidence-badge span {

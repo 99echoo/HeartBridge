@@ -744,9 +744,19 @@ def page_result():
     st.markdown("### 📤 결과 공유")
     col1, col2 = st.columns(2)
     with col1:
-        st.button("🔗 링크 복사", use_container_width=True, disabled=True)
+        if st.button("🔗 링크 복사", use_container_width=True):
+            st.session_state.show_link = True
     with col2:
         st.button("📋 만족도 조사", use_container_width=True, disabled=True)
+
+    # 링크 복사 버튼 클릭 시 URL 표시
+    if st.session_state.get("show_link", False):
+        landing_url = "http://localhost:8504/"
+        st.info("아래 링크를 복사하세요:")
+        st.code(landing_url, language=None)
+        if st.button("닫기"):
+            st.session_state.show_link = False
+            st.rerun()
 
     st.markdown("---")
 

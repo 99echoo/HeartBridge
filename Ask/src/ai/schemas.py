@@ -120,11 +120,6 @@ EXPERT_ANALYSIS_SCHEMA: Dict[str, Any] = {
                             "items": {"type": "string", "maxLength": 300},
                             "minItems": 1,
                             "maxItems": 5
-                        },
-                        "expected_outcome": {
-                            "type": "string",
-                            "description": "기대 효과 (optional)",
-                            "maxLength": 200
                         }
                     },
                     "additionalProperties": False
@@ -147,11 +142,6 @@ EXPERT_ANALYSIS_SCHEMA: Dict[str, Any] = {
                         "content": {
                             "type": "string",
                             "description": "설명",
-                            "maxLength": 400
-                        },
-                        "action": {
-                            "type": "string",
-                            "description": "구체적 행동 (optional)",
                             "maxLength": 400
                         }
                     },
@@ -206,7 +196,6 @@ MARI_NARRATIVE_SCHEMA: Dict[str, Any] = {
                             "minItems": 2,
                             "maxItems": 4,
                         },
-                        "outcome": {"type": "string", "maxLength": 200, "description": "기대 효과 (optional)"},
                     },
                     "additionalProperties": False,
                 },
@@ -221,7 +210,6 @@ MARI_NARRATIVE_SCHEMA: Dict[str, Any] = {
                     "properties": {
                         "principle": {"type": "string", "maxLength": 80},
                         "description": {"type": "string", "maxLength": 400},
-                        "action": {"type": "string", "maxLength": 400, "description": "구체적 행동 (optional)"},
                     },
                     "additionalProperties": False,
                 },
@@ -233,7 +221,6 @@ MARI_NARRATIVE_SCHEMA: Dict[str, Any] = {
                 "required": ["core_message"],
                 "properties": {
                     "core_message": {"type": "string", "maxLength": 300},
-                    "final_quote": {"type": "string", "maxLength": 200, "description": "최종 인용구 (optional)"},
                 },
                 "additionalProperties": False,
             },

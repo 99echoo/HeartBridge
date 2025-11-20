@@ -24,6 +24,7 @@ from src.ai.gpt4_vision import (
 )
 from src.ai.schemas import (
     EXPERT_ANALYSIS_SCHEMA,
+    MARI_NARRATIVE_SCHEMA,
     normalize_expert_json,
     validate_expert_json,
 )
@@ -74,30 +75,16 @@ async def call_gpt5_api(
     verbosity: str = "medium",
     reasoning_effort: str = "medium"
 ) -> str:
-    """
-    GPT-5 Responses API를 호출합니다 (JSON Schema 강제, verbosity, reasoning_effort 지원).
-
-    Args:
-        system: 시스템 프롬프트
-        user: 사용자 프롬프트
-        max_retries: 최대 재시도 횟수
-        model: GPT 모델명 (settings.AI_TEXT_MODEL)
-        use_json_schema: JSON Schema 강제 사용 여부
-        json_schema: JSON Schema 객체
-        temperature: 온도 (창의성)
-        verbosity: 요약↔상세 제어 (low | medium | high)
-        reasoning_effort: 추론 강도 (minimal | medium | extensive)
-
-    Returns:
-        str: AI 응답 텍스트
-
-    Raises:
-        Exception: API 호출 실패 시
-    """
     if model is None:
         model = settings.AI_TEXT_MODEL
     client = OpenAI(api_key=settings.OPENAI_API_KEY)
-    logger.info(f"GPT-5 Responses API 호출 시작 (model={model}, json_schema={use_json_schema}, temp={temperature}, verbosity={verbosity}, reasoning={reasoning_effort})")
+
+    reasoning_prefixes = ("gpt-5", "o1", "o3")
+    is_reasoning_model = model.startswith(reasoning_prefixes)
+
+    logger.info(
+        f"GPT-5 Responses API 호출 시작 (model={model}, json_schema={use_json_schema}, temp={temperature}, verbosity={verbosity}, reasoning={reasoning_effort})"
+    )
     logger.debug(f"System prompt 길이: {len(system)} chars")
     logger.debug(f"User prompt 길이: {len(user)} chars")
 
@@ -105,54 +92,64 @@ async def call_gpt5_api(
         try:
             logger.debug(f"API 호출 시도 {attempt + 1}/{max_retries + 1}")
 
-            # Input 구성 (Responses API 형식)
             input_messages = [
                 {"role": "system", "content": system},
                 {"role": "user", "content": user}
             ]
 
-            # GPT-5 Responses API 호출
+            base_args: dict[str, Any] = {
+                "model": model,
+                "input": input_messages,
+                "max_output_tokens": 8192,
+                "reasoning": {"effort": reasoning_effort},
+            }
+            if (not is_reasoning_model) and (temperature is not None):
+                base_args["temperature"] = temperature
+
             if use_json_schema and json_schema:
-                # JSON Schema 강제 모드
-                response = client.responses.create(
-                    model=model,
-                    input=input_messages,
-                    max_output_tokens=4096,
-                    temperature=temperature,
-                    reasoning={"effort": reasoning_effort},
-                    text={"verbosity": verbosity},
-                    response_format={
+                schema_name = (
+                    json_schema.get("name")
+                    or json_schema.get("title")
+                    or "structured_output"
+                )
+                schema_body = json_schema.get("schema", json_schema)
+                base_args["text"] = {
+                    "verbosity": verbosity,
+                    "format": {
                         "type": "json_schema",
-                        "json_schema": json_schema
-                    }
-                )
-                # JSON Schema 사용 시 output_parsed 사용
-                response_text = json.dumps(response.output_parsed, ensure_ascii=False)
+                        "name": schema_name,
+                        "schema": schema_body,
+                        "strict": json_schema.get("strict", True),
+                    },
+                }
+                response = client.responses.create(**base_args)
+                response_text = response.output_text
             else:
-                # 일반 텍스트 모드
-                response = client.responses.create(
-                    model=model,
-                    input=input_messages,
-                    max_output_tokens=4096,
-                    temperature=temperature,
-                    reasoning={"effort": reasoning_effort},
-                    text={"verbosity": verbosity}
-                )
-                # 텍스트 모드에서는 output_text 사용
+                base_args["text"] = {
+                    "verbosity": verbosity,
+                }
+                response = client.responses.create(**base_args)
                 response_text = response.output_text
 
             logger.info(f"GPT-5 API 호출 성공 (응답 길이: {len(response_text)} chars)")
 
-            # 사용량 로깅
-            if hasattr(response, 'usage'):
-                logger.info(f"토큰 사용량: prompt={response.usage.prompt_tokens}, completion={response.usage.completion_tokens}, total={response.usage.total_tokens}")
+            if hasattr(response, "usage") and response.usage is not None:
+                try:
+                    logger.info(
+                        "토큰 사용량: prompt=%s, completion=%s, total=%s",
+                        getattr(response.usage, "prompt_tokens", None),
+                        getattr(response.usage, "completion_tokens", None),
+                        getattr(response.usage, "total_tokens", None),
+                    )
+                except Exception:
+                    pass
 
             return response_text
 
         except APIError as e:
             logger.error(f"OpenAI API 오류 (시도 {attempt + 1}/{max_retries + 1}): {str(e)}")
             if attempt < max_retries:
-                wait_time = (2 ** attempt) * 0.5  # 지수 백오프: 0.5s, 1s, 2s
+                wait_time = (2 ** attempt) * 0.5
                 logger.warning(f"{wait_time}초 후 재시도...")
                 await asyncio.sleep(wait_time)
                 continue
@@ -458,7 +455,7 @@ async def analyze_two_stage(
                     json_schema=MARI_NARRATIVE_SCHEMA,
                     temperature=settings.AI_TEXT_TEMPERATURE_MARI,
                     verbosity="medium",
-                    reasoning_effort="minimal"
+                    reasoning_effort="low"
                 )
                 mari_story = parse_json_response(mari_json_str)
                 final_text = format_mari_story_markdown(mari_story)

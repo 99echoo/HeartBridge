@@ -135,36 +135,36 @@ async def analyze_dog_image_with_gpt4(
 
             # GPT-4o API 호출 (JSON Schema 강제)
             response = client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": VISION_SYSTEM_ROLE  # System role 추가
-                    },
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": VISION_ANALYSIS_PROMPT
-                            },
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/jpeg;base64,{base64_image}",
-                                    "detail": "high"  # 고해상도 분석
+                    model="gpt-4o",
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": VISION_SYSTEM_ROLE  # System role 추가
+                        },
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": VISION_ANALYSIS_PROMPT
+                                },
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:image/jpeg;base64,{base64_image}",
+                                        "detail": "high"  # 고해상도 분석
+                                    }
                                 }
-                            }
-                        ]
+                            ]
+                        }
+                    ],
+                    max_tokens=1500,
+                    temperature=0.3,  # 일관성 있는 분석을 위해 낮은 temperature
+                    response_format={
+                        "type": "json_schema",
+                        "json_schema": VISION_SCHEMA  # JSON Schema 강제
                     }
-                ],
-                max_tokens=1500,
-                temperature=0.3,  # 일관성 있는 분석을 위해 낮은 temperature
-                response_format={
-                    "type": "json_schema",
-                    "json_schema": VISION_SCHEMA  # JSON Schema 강제
-                }
-            )
+                )
 
             # 응답 추출
             result_text = response.choices[0].message.content

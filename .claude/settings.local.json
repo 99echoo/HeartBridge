@@ -45,7 +45,10 @@
       "Bash(venvScriptspython.exe:*)",
       "Bash(tasklist:*)",
       "Bash(./venv/Scripts/python.exe:*)",
-      "Bash(del Asknul)"
+      "Bash(del Asknul)",
+      "Bash(python3:*)",
+      "Bash(./venv/bin/pip:*)",
+      "Bash(./venv/bin/python:*)"
     ],
     "deny": [],
     "ask": []

@@ -756,7 +756,7 @@ def page_result():
         f"""
         <div style='text-align: center; margin-bottom: 14px;'>
             <p style='color: #333333; font-size: clamp(16px, 4vw, 20px); font-weight: bold; margin: 0;'>
-                {dog_name}의 행동 분석이 완료되었습니다!
+                {dog_name}의 행동 분석이 완료되었어요!
             </p>
         </div>
         """,
@@ -768,7 +768,9 @@ def page_result():
     if dog_photo:
         fixed_image = fix_image_orientation(dog_photo)
         if fixed_image:
-            st.image(fixed_image, caption=f"{dog_name}의 사진", width=260)
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                st.image(fixed_image, caption=f"{dog_name}의 사진", width=260)
 
     if sections["has_structured"]:
         # 데이터 출처에 따른 경고 메시지
@@ -776,18 +778,18 @@ def page_result():
 
         if data_source == "raw_json":
             st.warning("⚠️ 마리 변환에 실패하여 전문가 분석 결과를 표시합니다.")
-        elif data_source == "mari_story" and settings.APP_ENV == "development":
-            st.info("✅ 마리 변환 결과 (개발 모드)")
 
         # 기존 렌더링 함수 재사용 (마리 변환 또는 전문가 분석)
         render_summary_card(sections["summary"], dog_name)
-        render_core_message(sections.get("core_message"))
 
         if sections["solutions"]:
             render_solutions(sections["solutions"])
 
         if sections["guidance"]:
             render_guidance(sections["guidance"])
+
+        # 마리의 한마디를 맨 아래로 이동
+        render_core_message(sections.get("core_message"))
     else:
         # 최후 폴백: 구조화되지 않은 텍스트
         st.error("❌ 구조화된 결과 생성에 실패했습니다.")
@@ -800,13 +802,11 @@ def page_result():
     st.markdown("---")
 
     st.markdown("### 📤 결과 공유")
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
     with col1:
-        st.button("📸 인스타그램 공유", use_container_width=True)
+        st.button("🔗 링크 복사", use_container_width=True, disabled=True)
     with col2:
-        st.button("📧 이메일 전송", use_container_width=True)
-    with col3:
-        st.button("💾 PDF 저장", use_container_width=True)
+        st.button("📋 만족도 조사", use_container_width=True, disabled=True)
 
     st.markdown("---")
 

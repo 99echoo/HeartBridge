@@ -586,3 +586,48 @@
     [data-baseweb="checkbox"] svg {
         fill: #333333 !important;
     }
+
+    /* ===== 모바일 최적화 (결과 페이지) ===== */
+
+    @media (max-width: 768px) {
+        /* 카드 그림자 축소 */
+        .result-card {
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06) !important;
+        }
+
+        /* 제목 하단 간격 축소 */
+        .result-card h4 {
+            margin-bottom: 6px !important;
+        }
+
+        /* 리스트 상단 간격 */
+        .result-card ul {
+            margin-top: 8px !important;
+        }
+
+        /* 핵심 메시지 폰트 축소 */
+        .core-message-card {
+            font-size: 14px !important;
+        }
+
+        /* 가이던스 더 컴팩트하게 */
+        .guidance-item {
+            padding: 10px 14px !important;
+        }
+    }
+
+    @media (max-width: 480px) {
+        /* 초소형 화면 추가 최적화 */
+        .result-card {
+            padding: 14px !important;
+            margin-bottom: 14px !important;
+        }
+
+        .core-message-card {
+            padding: 12px !important;
+        }
+
+        .confidence-badge {
+            padding: 5px 10px !important;
+        }
+    }

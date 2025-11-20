@@ -34,7 +34,7 @@ def render_solutions(solutions: List[Dict[str, str]]) -> None:
         st.markdown(
             f"""
             <div class="result-card solution-card">
-                <p class="card-eyebrow">솔루션 {idx}</p>
+                <h4>{sol.get('title', '솔루션')}</h4>
                 <p>{sol.get('content', '')}</p>
                 <ul>
                     {''.join(f'<li>{detail}</li>' for detail in sol.get('details', []))}

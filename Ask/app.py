@@ -45,7 +45,6 @@ from src.services.analysis_service import (
     job_done,
     job_result,
 )
-from src.ui.messages import build_empathy_message
 from src.ui.result_sections import (
     render_summary_card,
     render_solutions,
@@ -455,18 +454,6 @@ def page_analyzing():
         .dynamic-message { font-size: clamp(16px,4vw,20px); font-weight: bold; color:#E8826B; text-align:center; margin:20px 0; }
         .dynamic-message.blinking { animation: blink 1s ease-in-out infinite; }
         .completion-message { font-size: clamp(18px,5vw,24px); font-weight:bold; color:#4CAF50; text-align:center; margin:20px 0; }
-        .empathy-card {
-            background: #fff6f2;
-            border: 1px solid #ffd6c9;
-            border-radius: 18px;
-            padding: 18px;
-            margin: 10px 0 25px 0;
-            box-shadow: 0 4px 12px rgba(232, 130, 107, 0.15);
-            text-align: center;
-            font-size: clamp(15px, 4vw, 18px);
-            line-height: 1.5;
-            color: #cc5b3f;
-        }
         </style>
     """, unsafe_allow_html=True)
 
@@ -480,31 +467,17 @@ def page_analyzing():
             st.image(mari_image, width=300)
 
     dog_name = st.session_state.responses.get("dog_name", "강아지")
+    dog_breed = st.session_state.responses.get("dog_breed", "우리 친구")
     dynamic_messages = [
         f"🐶 {dog_name}의 행동을 꼼꼼히 분석하고 있어요!",
         "🔍 마리가 열심히 생각 중이에요...",
         "💭 전문가 의견을 모으고 있어요!",
-        "✨ 맞춤 솔루션을 준비하고 있어요!",
+        f"{dog_name}의 작은 표정 변화도 소중하죠. {dog_breed} 친구의 마음을 천천히 열어볼게요.",
         "⏳ 조금만 기다려주세요, 거의 다 됐어요!",
     ]
-    if "empathy_message" not in st.session_state:
-        st.session_state.empathy_message = build_empathy_message(
-            dog_name,
-            st.session_state.responses.get("dog_breed"),
-        )
     message_placeholder = st.empty()
     st.markdown("### 분석 진행 중...")
     progress_bar = st.progress(0.0)
-    status_text = st.empty()
-
-    st.markdown(
-        f"""
-        <div class="empathy-card">
-            {st.session_state.empathy_message}
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
 
     if "analysis_inputs" not in st.session_state:
         dog_photo = st.session_state.get("dog_photo")
@@ -545,21 +518,6 @@ def page_analyzing():
     progress_ratio = min(elapsed / expected, 0.95)
     progress_bar.progress(progress_ratio)
 
-    status_timeline = [
-        (0.05, "📋 설문 응답 데이터 처리 중..."),
-        (0.15, "📊 응답 패턴 분석 중..."),
-        (0.3, "🖼️ 이미지 로딩 및 특징 추출 중..."),
-        (0.5, "🤖 1차 AI 전문가 분석 시작..."),
-        (0.7, "🎯 문제 원인 파악 중..."),
-        (0.85, "✨ 2차 AI 마리 변환 중..."),
-    ]
-    current_status = status_timeline[-1][1]
-    for threshold, message in status_timeline:
-        if progress_ratio <= threshold:
-            current_status = message
-            break
-    status_text.text(current_status)
-
     msg_index = min(int(progress_ratio * len(dynamic_messages)), len(dynamic_messages) - 1)
     message_placeholder.markdown(
         f'<div class="dynamic-message blinking">{dynamic_messages[msg_index]}</div>',
@@ -591,10 +549,8 @@ def page_analyzing():
 
     st.session_state.pop("analysis_job", None)
     st.session_state.pop("analysis_inputs", None)
-    st.session_state.pop("empathy_message", None)
 
     progress_bar.progress(1.0)
-    status_text.text("✅ 분석 완료!")
     message_placeholder.markdown(
         '<div class="completion-message">🎉 결과가 완료됐어요!</div>',
         unsafe_allow_html=True,

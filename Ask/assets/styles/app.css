@@ -216,6 +216,8 @@
     /* 섹션 제목 반응형 */
     h1, .stMarkdown h1 {
         font-size: clamp(24px, 6vw, 32px) !important;
+        word-break: keep-all !important;
+        line-height: 1.3 !important;
     }
 
     h2, .stMarkdown h2 {
@@ -225,6 +227,8 @@
 
     h3, .stMarkdown h3 {
         font-size: clamp(16px, 4vw, 20px) !important;
+        margin-top: clamp(16px, 4vw, 24px) !important;
+        margin-bottom: clamp(8px, 2vw, 12px) !important;
     }
 
     /* 일반 텍스트 반응형 */
@@ -369,6 +373,8 @@
 }
 
 .card-caption {
+    font-size: clamp(14px, 3.5vw, 16px);
+    line-height: 1.5;
     color: #555;
 }
 
@@ -392,8 +398,9 @@
 }
 
 .guidance-title {
+    font-size: clamp(14px, 3.5vw, 16px);
     font-weight: 600;
-    margin-bottom: 4px;
+    margin-bottom: clamp(2px, 0.5vw, 4px);
     color: #d2664a;
 }
 
@@ -428,7 +435,7 @@
 }
 
 .confidence-badge span {
-    font-size: 18px;
+    font-size: clamp(16px, 4vw, 18px);
     font-weight: 700;
 }
 

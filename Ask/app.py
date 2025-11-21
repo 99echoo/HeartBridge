@@ -765,6 +765,8 @@ def page_result():
     with col2:
         st.link_button("📋 만족도 조사", survey_url, use_container_width=True)
 
+    st.caption("만족도 조사를 완료해주시면, 정식 출시 전 얼리버드 혜택을 가장 먼저 받아보실 수 있어요! 🙌")
+
     st.markdown("---")
 
     col1, col2, col3 = st.columns([1, 2, 1])

@@ -307,6 +307,17 @@
         align-items: center !important;
     }
 
+    /* 컬럼 내부 이미지 중앙 정렬 (모바일) */
+    [data-testid="column"] .stImage {
+        display: flex !important;
+        justify-content: center !important;
+    }
+
+    [data-testid="column"] .stImage img {
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+
     /* 페이지 제목 (h2) 중앙 정렬 - 여러 선택자 사용 */
     h2 {
         text-align: center !important;

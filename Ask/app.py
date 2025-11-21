@@ -746,37 +746,24 @@ def page_result():
 
     st.markdown("### 📤 결과 공유")
 
-    # 링크 복사용 JavaScript
-    landing_url = "http://localhost:8504/"
-    st.components.v1.html(
-        f"""
-        <script>
-        function copyToClipboard() {{
-            navigator.clipboard.writeText('{landing_url}').then(function() {{
-                // 성공 시 아무것도 하지 않음 (Streamlit toast가 처리)
-            }}, function(err) {{
-                console.error('클립보드 복사 실패:', err);
-            }});
-        }}
-        </script>
-        """,
-        height=0,
-    )
+    # 링크 복사용 URL
+    share_url = "https://heartbridge-mtif3wkjetjqdrr6ikjtpt.streamlit.app"
+    survey_url = "https://forms.gle/ZDheNtd7woUDqyzS6"
 
     col1, col2 = st.columns(2)
     with col1:
         if st.button("🔗 링크 복사", use_container_width=True, key="copy_link"):
             st.toast("✅ 링크가 클립보드에 복사되었습니다!", icon="✅")
             st.markdown(
-                """
+                f"""
                 <script>
-                navigator.clipboard.writeText('http://localhost:8504/');
+                navigator.clipboard.writeText('{share_url}');
                 </script>
                 """,
                 unsafe_allow_html=True
             )
     with col2:
-        st.button("📋 만족도 조사", use_container_width=True, disabled=True)
+        st.link_button("📋 만족도 조사", survey_url, use_container_width=True)
 
     st.markdown("---")
 

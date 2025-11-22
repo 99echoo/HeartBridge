@@ -540,12 +540,18 @@ def page_analyzing():
     st.session_state.analysis_result = result
 
     try:
-        save_to_csv(
+        csv_path = save_to_csv(
             responses=st.session_state.responses,
             analysis_result=result,
         )
+        # 로깅 (서버 콘솔에서 확인 가능)
+        import logging
+        logging.info(f"CSV 저장 완료: {csv_path}")
     except Exception as csv_error:
-        st.warning(f"CSV 저장 실패: {csv_error}")
+        import logging
+        logging.error(f"CSV 저장 실패: {csv_error}", exc_info=True)
+        st.warning(f"⚠️ CSV 저장 실패: {csv_error}\n\n"
+                  f"상세 오류는 서버 로그를 확인해주세요.")
 
     st.session_state.pop("analysis_job", None)
     st.session_state.pop("analysis_inputs", None)

@@ -6,11 +6,56 @@
 
 import csv
 import json
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Optional
 
-from src.utils.paths import get_csv_output_path
+from src.utils.paths import get_csv_output_path, get_csv_log_path
+
+
+# ===== 로깅 설정 =====
+
+def setup_csv_logger():
+    """
+    CSV 로거를 설정합니다.
+    로그는 runtime/{APP_ENV}/logs/csv_logger.log 파일에 저장됩니다.
+
+    Returns:
+        logging.Logger: 설정된 로거 인스턴스
+    """
+    logger = logging.getLogger("csv_logger")
+    logger.setLevel(logging.DEBUG)
+
+    # 기존 핸들러 제거 (중복 방지)
+    if logger.handlers:
+        logger.handlers.clear()
+
+    # 로그 파일 경로
+    log_dir = get_csv_log_path().parent
+    log_file = get_csv_log_path()
+
+    # 부모 디렉토리 생성 (AWS 환경 대응)
+    log_dir.mkdir(parents=True, exist_ok=True)
+
+    # 파일 핸들러 (UTF-8 인코딩, append 모드)
+    file_handler = logging.FileHandler(log_file, mode='a', encoding='utf-8')
+    file_handler.setLevel(logging.DEBUG)
+
+    # 포맷터 설정
+    formatter = logging.Formatter(
+        '[%(asctime)s] [%(levelname)s] %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+    file_handler.setFormatter(formatter)
+
+    logger.addHandler(file_handler)
+
+    return logger
+
+
+# 로거 초기화
+logger = setup_csv_logger()
 
 
 def save_to_csv(
@@ -24,7 +69,7 @@ def save_to_csv(
     Args:
         responses: 설문 응답 딕셔너리 (st.session_state.responses)
         analysis_result: AI 분석 결과 딕셔너리 (st.session_state.analysis_result)
-        csv_path: CSV 파일 경로 (기본값: runtime/{APP_ENV}/data/survey_results.csv)
+        csv_path: CSV 파일 경로 (기본값: Ask/result/survey_results.csv)
 
     Returns:
         str: 저장된 CSV 파일 경로
@@ -37,6 +82,14 @@ def save_to_csv(
         csv_path = get_csv_output_path()
     else:
         csv_path = Path(csv_path)
+
+    # 절대 경로로 변환 (AWS 환경에서 상대 경로 문제 방지)
+    csv_path = csv_path.resolve()
+
+    # 부모 디렉토리가 없으면 생성 (AWS 환경 대응)
+    csv_path.parent.mkdir(parents=True, exist_ok=True)
+
+    logger.info(f"CSV 파일 저장 경로: {csv_path}")
 
     # 타임스탬프
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -106,10 +159,18 @@ def save_to_csv(
             # 데이터 행 작성
             writer.writerow(row_data)
 
-        return str(csv_path)
+        saved_path = str(csv_path)
+        logger.info(f"CSV 파일 저장 성공: {saved_path}")
+        return saved_path
 
+    except OSError as e:
+        error_msg = f"CSV 파일 저장 실패 (경로: {csv_path}): {str(e)}"
+        logger.error(error_msg, exc_info=True)
+        raise IOError(error_msg) from e
     except Exception as e:
-        raise IOError(f"CSV 파일 저장 실패: {str(e)}")
+        error_msg = f"CSV 파일 저장 실패 (경로: {csv_path}): {str(e)}"
+        logger.error(error_msg, exc_info=True)
+        raise IOError(error_msg) from e
 
 
 def get_csv_path() -> Path:

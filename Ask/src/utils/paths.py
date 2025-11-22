@@ -49,8 +49,11 @@ def get_runtime_logs_dir() -> Path:
 def get_csv_output_path(filename: str = "survey_results.csv") -> Path:
     """
     CSV 기본 저장 경로를 반환합니다.
+    Ask/result/survey_results.csv 위치에 저장됩니다.
     """
-    return get_runtime_data_dir() / filename
+    result_dir = get_project_root() / "result"
+    result_dir.mkdir(parents=True, exist_ok=True)
+    return result_dir / filename
 
 
 def get_performance_log_path() -> Path:
@@ -58,3 +61,10 @@ def get_performance_log_path() -> Path:
     성능 계측 로그 파일 경로를 반환합니다.
     """
     return get_runtime_logs_dir() / "performance.log"
+
+
+def get_csv_log_path() -> Path:
+    """
+    CSV 저장 관련 로그 파일 경로를 반환합니다.
+    """
+    return get_runtime_logs_dir() / "csv_logger.log"
